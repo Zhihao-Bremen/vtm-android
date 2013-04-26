@@ -36,17 +36,15 @@ import java.util.Map;
 
 import org.oscim.core.BoundingBox;
 import org.oscim.core.GeoPoint;
-import org.oscim.core.GeometryBuffer;
+import org.oscim.core.GeometryBuffer.GeometryType;
+import org.oscim.core.MapElement;
 import org.oscim.core.Tag;
 import org.oscim.core.Tile;
 import org.oscim.database.IMapDatabase;
 import org.oscim.database.IMapDatabaseCallback;
-import org.oscim.database.IMapDatabaseCallback.WayData;
 import org.oscim.database.MapInfo;
 import org.oscim.database.MapOptions;
-import org.oscim.database.OpenResult;
-import org.oscim.database.QueryResult;
-import org.oscim.generator.JobTile;
+import org.oscim.layers.tile.MapTile;
 
 import android.os.Environment;
 import android.os.SystemClock;
@@ -93,7 +91,7 @@ public class MapDatabase implements IMapDatabase {
 
 	private IMapDatabaseCallback mMapGenerator;
 	private float mScaleFactor;
-	private JobTile mTile;
+	private MapTile mTile;
 	private FileOutputStream mCacheFile;
 
 	private String mHost;
@@ -103,7 +101,7 @@ public class MapDatabase implements IMapDatabase {
 
 	private static final int MAX_TAGS_CACHE = 100;
 
-	private final WayData mWay = new WayData();
+	private final MapElement mElement = new MapElement();
 
 	private static Map<String, Tag> tagHash = Collections
 			.synchronizedMap(new LinkedHashMap<String, Tag>(
@@ -120,7 +118,7 @@ public class MapDatabase implements IMapDatabase {
 			});
 
 	@Override
-	public QueryResult executeQuery(JobTile tile, IMapDatabaseCallback mapDatabaseCallback) {
+	public QueryResult executeQuery(MapTile tile, IMapDatabaseCallback mapDatabaseCallback) {
 		QueryResult result = QueryResult.SUCCESS;
 		mCacheFile = null;
 
@@ -311,8 +309,6 @@ public class MapDatabase implements IMapDatabase {
 	// overall bytes of content processed
 	private int mBytesProcessed;
 
-	private final GeometryBuffer mGeom = new GeometryBuffer(1 << 14, 1 << 8);
-
 
 	private boolean decode() throws IOException {
 		mBytesProcessed = 0;
@@ -451,15 +447,11 @@ public class MapDatabase implements IMapDatabase {
 		}
 
 		// FIXME, remove all tiles from cache then remove this below
-		if (layer == 0)
-			layer = 5;
-
-		mWay.geom = mGeom;
-		mWay.tags = tags;
-		mWay.layer = layer;
-		mWay.closed = polygon;
-
-		mMapGenerator.renderWay(mWay);
+		//if (layer == 0)
+		//	layer = 5;
+		mElement.type =  polygon ? GeometryType.POLY : GeometryType.LINE;
+		mElement.set(tags, layer);
+		mMapGenerator.renderElement(mElement);
 		return true;
 	}
 
@@ -524,7 +516,7 @@ public class MapDatabase implements IMapDatabase {
 		// read repeated sint32
 		int lastX = 0;
 		int lastY = 0;
-		float[] coords = mGeom.ensurePointSize(numNodes, false);
+		float[] coords = mElement.ensurePointSize(numNodes, false);
 
 		while (mBytesProcessed < end && cnt < numNodes) {
 			int lon = decodeZigZag32(decodeVarint32());
@@ -535,8 +527,11 @@ public class MapDatabase implements IMapDatabase {
 			coords[cnt++] = Tile.SIZE - lastY / scale;
 		}
 
-		mGeom.index[0] = (short)numNodes;
-		mMapGenerator.renderPOI(layer, tags, mGeom);
+
+		mElement.index[0] = (short)numNodes;
+		mElement.type = GeometryType.POINT;
+		mElement.set(tags, layer);
+		mMapGenerator.renderElement(mElement);
 
 		return cnt;
 	}
@@ -583,12 +578,7 @@ public class MapDatabase implements IMapDatabase {
 	private short[] decodeWayIndices(int indexCnt) throws IOException {
 		int bytes = decodeVarint32();
 
-		short[] index = mGeom.ensureIndexSize(indexCnt, false);
-
-//				mIndices;
-//		if (index.length < indexCnt + 1) {
-//			index = mIndices = new short[indexCnt + 1];
-//		}
+		short[] index = mElement.ensureIndexSize(indexCnt + 1, false);
 
 		readBuffer(bytes);
 
@@ -675,7 +665,7 @@ public class MapDatabase implements IMapDatabase {
 		int y, lastY = 0;
 		boolean even = true;
 
-		float[] coords = mGeom.ensurePointSize(nodes, false);
+		float[] coords = mElement.ensurePointSize(nodes, false);
 
 		// read repeated sint32
 		while (pos < end) {

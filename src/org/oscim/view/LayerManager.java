@@ -21,133 +21,177 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.oscim.core.MapPosition;
 import org.oscim.core.PointF;
-import org.oscim.overlay.Overlay;
+import org.oscim.layers.InputLayer;
+import org.oscim.layers.Layer;
 import org.oscim.overlay.Overlay.Snappable;
 import org.oscim.renderer.overlays.RenderOverlay;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnDoubleTapListener;
 import android.view.GestureDetector.OnGestureListener;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
-public class LayerManager extends AbstractList<Overlay> implements OnGestureListener,
+public class LayerManager extends AbstractList<Layer> implements OnGestureListener,
 		OnDoubleTapListener {
+	private final static String TAG = LayerManager.class.getName();
+	private final static boolean debugInput = false;
 
 	private final GestureDetector mGestureDetector;
 
-	private final CopyOnWriteArrayList<Overlay> mOverlayList;
+	private final CopyOnWriteArrayList<Layer> mLayerList;
 
 	LayerManager(Context context) {
-		mOverlayList = new CopyOnWriteArrayList<Overlay>();
+		mLayerList = new CopyOnWriteArrayList<Layer>();
 		mGestureDetector = new GestureDetector(context, this);
 		mGestureDetector.setOnDoubleTapListener(this);
 	}
 
 	@Override
-	public synchronized Overlay get(final int pIndex) {
-		return mOverlayList.get(pIndex);
+	public synchronized Layer get(final int pIndex) {
+		return mLayerList.get(pIndex);
 	}
 
 	@Override
 	public synchronized int size() {
-		return mOverlayList.size();
+		return mLayerList.size();
 	}
 
 	@Override
-	public synchronized void add(final int pIndex, final Overlay pElement) {
-		mOverlayList.add(pIndex, pElement);
-		mDirtyOverlays = true;
+	public synchronized void add(final int pIndex, final Layer pElement) {
+		mLayerList.add(pIndex, pElement);
+		mDirtyLayers = true;
 	}
 
 	@Override
-	public synchronized Overlay remove(final int pIndex) {
-		mDirtyOverlays = true;
-		return mOverlayList.remove(pIndex);
+	public synchronized Layer remove(final int pIndex) {
+		mDirtyLayers = true;
+		return mLayerList.remove(pIndex);
 	}
 
 	@Override
-	public synchronized Overlay set(final int pIndex, final Overlay pElement) {
-		mDirtyOverlays = true;
-		return mOverlayList.set(pIndex, pElement);
+	public synchronized Layer set(final int pIndex, final Layer pElement) {
+		mDirtyLayers = true;
+		return mLayerList.set(pIndex, pElement);
 	}
 
 	public boolean handleMotionEvent(MotionEvent e) {
 
-		if (mGestureDetector.onTouchEvent(e))
-			return true;
+		if (!mCancelGesture)
+			if (mGestureDetector.onTouchEvent(e))
+				return true;
 
+		if (mCancelGesture) {
+			int action = e.getAction();
+			if (action == MotionEvent.ACTION_CANCEL ||
+					action == MotionEvent.ACTION_UP)
+				mCancelGesture = false;
+		}
 		if (onTouchEvent(e))
 			return true;
 
 		return false;
 	}
 
-	private boolean mDirtyOverlays;
+	private boolean mDirtyLayers;
 	private RenderOverlay[] mDrawLayers;
 
 	public RenderOverlay[] getRenderLayers() {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
 		return mDrawLayers;
 	}
 
 	public void onDetach() {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
+		for (Layer o : mLayers)
 			o.onDetach();
 	}
 
-	Overlay[] mOverlays;
+	Layer[] mLayers;
+	InputLayer[] mInputLayer;
 
-	private synchronized void updateOverlays() {
-		if (!mDirtyOverlays)
+	private synchronized void updateLayers() {
+		if (!mDirtyLayers)
 			return;
 
-		mOverlays = new Overlay[mOverlayList.size()];
+		mLayers = new Layer[mLayerList.size()];
 
 		int numRenderLayers = 0;
+		int numInputLayers = 0;
 
-		for (int i = 0, n = mOverlayList.size(); i < n; i++) {
-			Overlay o = mOverlayList.get(i);
+		//Log.d(TAG, "update layers:");
+
+		for (int i = 0, n = mLayerList.size(); i < n; i++) {
+			Layer o = mLayerList.get(i);
+
+			//Log.d(TAG, "\t" + o.getClass().getName());
+
 			if (o.getLayer() != null)
 				numRenderLayers++;
 
-			mOverlays[n - i - 1] = o;
+			if (o instanceof InputLayer)
+				numInputLayers++;
+
+			mLayers[i] = o;
 		}
 
 		mDrawLayers = new RenderOverlay[numRenderLayers];
+		mInputLayer = new InputLayer[numInputLayers];
 
-		for (int i = 0, cnt = 0, n = mOverlayList.size(); i < n; i++) {
-			Overlay o = mOverlayList.get(i);
+		for (int i = 0, cntR = 0, cntI = 1, n = mLayerList.size(); i < n; i++) {
+			Layer o = mLayerList.get(i);
 			RenderOverlay l = o.getLayer();
 			if (l != null)
-				mDrawLayers[cnt++] = l;
+				mDrawLayers[cntR++] = l;
+
+			if (o instanceof InputLayer) {
+				// sort from top to bottom, so that highest layers
+				// process event first.
+				mInputLayer[numInputLayers - cntI] = (InputLayer) o;
+				cntI++;
+			}
 		}
 
-		mDirtyOverlays = false;
+		mDirtyLayers = false;
+	}
+
+	private boolean mCancelGesture;
+
+	/**
+	 * Call this to not foward events to generic GestureDetector until
+	 * next ACTION_UP or ACTION_CANCEL event. - Use with care for the
+	 * case that an InputLayer recognized the start of its gesture and
+	 * does further processing in only onTouch callback.
+	 */
+	public void cancelGesture() {
+		mCancelGesture = true;
 	}
 
 	public boolean onTouchEvent(final MotionEvent event) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
-			if (o.onTouchEvent(event))
+		for (InputLayer o : mInputLayer) {
+			if (o.onTouchEvent(event)) {
+				if (debugInput)
+					Log.d(TAG, "onTouch\t\t" + o.getClass());
 				return true;
-
+			}
+		}
 		return false;
 	}
 
 	public boolean onKeyDown(final int keyCode, final KeyEvent event) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
+		for (InputLayer o : mInputLayer)
 			if (o.onKeyDown(keyCode, event))
 				return true;
 
@@ -155,10 +199,10 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 	}
 
 	public boolean onKeyUp(final int keyCode, final KeyEvent event) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
+		for (InputLayer o : mInputLayer)
 			if (o.onKeyUp(keyCode, event))
 				return true;
 
@@ -166,10 +210,10 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 	}
 
 	public boolean onTrackballEvent(final MotionEvent event) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
+		for (InputLayer o : mInputLayer)
 			if (o.onTrackballEvent(event))
 				return true;
 
@@ -177,10 +221,10 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 	}
 
 	public boolean onSnapToItem(final int x, final int y, final PointF snapPoint) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
+		for (InputLayer o : mInputLayer)
 			if (o instanceof Snappable)
 				if (((Snappable) o).onSnapToItem(x, y, snapPoint))
 					return true;
@@ -192,37 +236,46 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 
 	@Override
 	public boolean onDoubleTap(final MotionEvent e) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
-			if (o.onDoubleTap(e))
+		for (InputLayer o : mInputLayer) {
+			if (o.onDoubleTap(e)) {
+				if (debugInput)
+					Log.d(TAG, "onDoubleTap\t" + o.getClass());
 				return true;
-
+			}
+		}
 		return false;
 	}
 
 	@Override
 	public boolean onDoubleTapEvent(final MotionEvent e) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
-			if (o.onDoubleTapEvent(e))
+		for (InputLayer o : mInputLayer) {
+			if (o.onDoubleTapEvent(e)) {
+				if (debugInput)
+					Log.d(TAG, "onDoubleTapEvent\t" + o.getClass());
 				return true;
-
+			}
+		}
 		return false;
 	}
 
 	@Override
 	public boolean onSingleTapConfirmed(final MotionEvent e) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
-			if (o.onSingleTapConfirmed(e))
+		for (InputLayer o : mInputLayer) {
+			if (o.onSingleTapConfirmed(e)) {
+				if (debugInput)
+					Log.d(TAG, "onSingleTapConfirmed\tt" + o.getClass());
 				return true;
-
+			}
+		}
 		return false;
 	}
 
@@ -230,35 +283,41 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 
 	@Override
 	public boolean onDown(final MotionEvent pEvent) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
-			if (o.onDown(pEvent))
+		for (InputLayer o : mInputLayer) {
+			if (o.onDown(pEvent)) {
+				if (debugInput)
+					Log.d(TAG, "onDown\t" + o.getClass());
 				return true;
-
+			}
+		}
 		return false;
 	}
 
 	@Override
 	public boolean onFling(final MotionEvent pEvent1, final MotionEvent pEvent2,
 			final float pVelocityX, final float pVelocityY) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
-			if (o.onFling(pEvent1, pEvent2, pVelocityX, pVelocityY))
+		for (InputLayer o : mInputLayer) {
+			if (o.onFling(pEvent1, pEvent2, pVelocityX, pVelocityY)) {
+				if (debugInput)
+					Log.d(TAG, "onFling\t" + o.getClass());
 				return true;
-
+			}
+		}
 		return false;
 	}
 
 	@Override
 	public void onLongPress(final MotionEvent pEvent) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
+		for (InputLayer o : mInputLayer)
 			if (o.onLongPress(pEvent))
 				return;
 	}
@@ -266,85 +325,100 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 	@Override
 	public boolean onScroll(final MotionEvent pEvent1, final MotionEvent pEvent2,
 			final float pDistanceX, final float pDistanceY) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
-			if (o.onScroll(pEvent1, pEvent2, pDistanceX, pDistanceY))
+		for (InputLayer o : mInputLayer) {
+			if (o.onScroll(pEvent1, pEvent2, pDistanceX, pDistanceY)) {
+				if (debugInput)
+					Log.d(TAG, "onScroll\t" + o.getClass());
 				return true;
-
+			}
+		}
 		return false;
 	}
 
 	@Override
 	public void onShowPress(final MotionEvent pEvent) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
+		for (InputLayer o : mInputLayer)
 			o.onShowPress(pEvent);
 
 	}
 
 	@Override
 	public boolean onSingleTapUp(final MotionEvent pEvent) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
-			if (o.onSingleTapUp(pEvent))
+		for (InputLayer o : mInputLayer) {
+			if (o.onSingleTapUp(pEvent)) {
+				if (debugInput)
+					Log.d(TAG, "onSingleTapUp\t" + o.getClass());
 				return true;
-
+			}
+		}
 		return false;
 	}
 
 	public void onUpdate(MapPosition mapPosition, boolean changed) {
-		if (mDirtyOverlays)
-			updateOverlays();
+		if (mDirtyLayers)
+			updateLayers();
 
-		for (Overlay o : mOverlays)
-			o.onUpdate(mapPosition, changed);
+		for (Layer l : mLayers)
+			l.onUpdate(mapPosition, changed);
+	}
+
+	public void destroy() {
+		if (mDirtyLayers)
+			updateLayers();
+
+		for (Layer l : mLayers) {
+			l.destroy();
+		}
 	}
 
 	// /**
-	// * Gets the optional TilesOverlay class.
+	// * Gets the optional TilesLayer class.
 	// *
-	// * @return the tilesOverlay
+	// * @return the tilesLayer
 	// */
-	// public TilesOverlay getTilesOverlay() {
-	// return mTilesOverlay;
+	// public TilesLayer getTilesLayer() {
+	// return mTilesLayer;
 	// }
 	//
 	// /**
-	// * Sets the optional TilesOverlay class. If set, this overlay will be
+	// * Sets the optional TilesLayer class. If set, this overlay will be
 	// drawn before all other
 	// * overlays and will not be included in the editable list of overlays and
 	// can't be cleared
-	// * except by a subsequent call to setTilesOverlay().
+	// * except by a subsequent call to setTilesLayer().
 	// *
-	// * @param tilesOverlay
-	// * the tilesOverlay to set
+	// * @param tilesLayer
+	// * the tilesLayer to set
 	// */
-	// public void setTilesOverlay(final TilesOverlay tilesOverlay) {
-	// mTilesOverlay = tilesOverlay;
+	// public void setTilesLayer(final TilesLayer tilesLayer) {
+	// mTilesLayer = tilesLayer;
 	// }
 
 	//	public void onDraw(final Canvas c, final MapView pMapView) {
-	//		// if ((mTilesOverlay != null) && mTilesOverlay.isEnabled()) {
-	//		// mTilesOverlay.draw(c, pMapView, true);
+	//		// if ((mTilesLayer != null) && mTilesLayer.isEnabled()) {
+	//		// mTilesLayer.draw(c, pMapView, true);
 	//		// }
 	//		//
-	//		// if ((mTilesOverlay != null) && mTilesOverlay.isEnabled()) {
-	//		// mTilesOverlay.draw(c, pMapView, false);
+	//		// if ((mTilesLayer != null) && mTilesLayer.isEnabled()) {
+	//		// mTilesLayer.draw(c, pMapView, false);
 	//		// }
 	//
-	//		for (final Overlay overlay : mOverlayList) {
+	//		for (final Layer overlay : mLayerList) {
 	//			if (overlay.isEnabled()) {
 	//				overlay.draw(c, pMapView, true);
 	//			}
 	//		}
 	//
-	//		for (final Overlay overlay : mOverlayList) {
+	//		for (final Layer overlay : mLayerList) {
 	//			if (overlay.isEnabled()) {
 	//				overlay.draw(c, pMapView, false);
 	//			}
@@ -355,10 +429,10 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 	// ** Options Menu **//
 
 	// public void setOptionsMenusEnabled(final boolean pEnabled) {
-	// for (final Overlay overlay : mOverlayList) {
-	// if ((overlay instanceof IOverlayMenuProvider)
-	// && ((IOverlayMenuProvider) overlay).isOptionsMenuEnabled()) {
-	// ((IOverlayMenuProvider) overlay).setOptionsMenuEnabled(pEnabled);
+	// for (final Layer overlay : mLayerList) {
+	// if ((overlay instanceof ILayerMenuProvider)
+	// && ((ILayerMenuProvider) overlay).isOptionsMenuEnabled()) {
+	// ((ILayerMenuProvider) overlay).setOptionsMenuEnabled(pEnabled);
 	// }
 	// }
 	// }
@@ -367,19 +441,19 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 	// menuIdOffset,
 	// final MapView mapView) {
 	// boolean result = true;
-	// for (final Overlay overlay : this.overlaysReversed()) {
-	// if ((overlay instanceof IOverlayMenuProvider)
-	// && ((IOverlayMenuProvider) overlay).isOptionsMenuEnabled()) {
-	// result &= ((IOverlayMenuProvider) overlay).onCreateOptionsMenu(pMenu,
+	// for (final Layer overlay : this.overlaysReversed()) {
+	// if ((overlay instanceof ILayerMenuProvider)
+	// && ((ILayerMenuProvider) overlay).isOptionsMenuEnabled()) {
+	// result &= ((ILayerMenuProvider) overlay).onCreateOptionsMenu(pMenu,
 	// menuIdOffset,
 	// mapView);
 	// }
 	// }
 	//
-	// if ((mTilesOverlay != null) && (mTilesOverlay instanceof
-	// IOverlayMenuProvider)
-	// && ((IOverlayMenuProvider) mTilesOverlay).isOptionsMenuEnabled()) {
-	// result &= mTilesOverlay.onCreateOptionsMenu(pMenu, menuIdOffset,
+	// if ((mTilesLayer != null) && (mTilesLayer instanceof
+	// ILayerMenuProvider)
+	// && ((ILayerMenuProvider) mTilesLayer).isOptionsMenuEnabled()) {
+	// result &= mTilesLayer.onCreateOptionsMenu(pMenu, menuIdOffset,
 	// mapView);
 	// }
 	//
@@ -389,18 +463,18 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 	// public boolean onPrepareOptionsMenu(final Menu pMenu, final int
 	// menuIdOffset,
 	// final MapView mapView) {
-	// for (final Overlay overlay : this.overlaysReversed()) {
-	// if ((overlay instanceof IOverlayMenuProvider)
-	// && ((IOverlayMenuProvider) overlay).isOptionsMenuEnabled()) {
-	// ((IOverlayMenuProvider) overlay).onPrepareOptionsMenu(pMenu,
+	// for (final Layer overlay : this.overlaysReversed()) {
+	// if ((overlay instanceof ILayerMenuProvider)
+	// && ((ILayerMenuProvider) overlay).isOptionsMenuEnabled()) {
+	// ((ILayerMenuProvider) overlay).onPrepareOptionsMenu(pMenu,
 	// menuIdOffset, mapView);
 	// }
 	// }
 	//
-	// if ((mTilesOverlay != null) && (mTilesOverlay instanceof
-	// IOverlayMenuProvider)
-	// && ((IOverlayMenuProvider) mTilesOverlay).isOptionsMenuEnabled()) {
-	// mTilesOverlay.onPrepareOptionsMenu(pMenu, menuIdOffset, mapView);
+	// if ((mTilesLayer != null) && (mTilesLayer instanceof
+	// ILayerMenuProvider)
+	// && ((ILayerMenuProvider) mTilesLayer).isOptionsMenuEnabled()) {
+	// mTilesLayer.onPrepareOptionsMenu(pMenu, menuIdOffset, mapView);
 	// }
 	//
 	// return true;
@@ -409,20 +483,20 @@ public class LayerManager extends AbstractList<Overlay> implements OnGestureList
 	// public boolean onOptionsItemSelected(final MenuItem item, final int
 	// menuIdOffset,
 	// final MapView mapView) {
-	// for (final Overlay overlay : this.overlaysReversed()) {
-	// if ((overlay instanceof IOverlayMenuProvider)
-	// && ((IOverlayMenuProvider) overlay).isOptionsMenuEnabled()
-	// && ((IOverlayMenuProvider) overlay).onOptionsItemSelected(item,
+	// for (final Layer overlay : this.overlaysReversed()) {
+	// if ((overlay instanceof ILayerMenuProvider)
+	// && ((ILayerMenuProvider) overlay).isOptionsMenuEnabled()
+	// && ((ILayerMenuProvider) overlay).onOptionsItemSelected(item,
 	// menuIdOffset,
 	// mapView)) {
 	// return true;
 	// }
 	// }
 	//
-	// if ((mTilesOverlay != null)
-	// && (mTilesOverlay instanceof IOverlayMenuProvider)
-	// && ((IOverlayMenuProvider) mTilesOverlay).isOptionsMenuEnabled()
-	// && ((IOverlayMenuProvider) mTilesOverlay).onOptionsItemSelected(item,
+	// if ((mTilesLayer != null)
+	// && (mTilesLayer instanceof ILayerMenuProvider)
+	// && ((ILayerMenuProvider) mTilesLayer).isOptionsMenuEnabled()
+	// && ((ILayerMenuProvider) mTilesLayer).onOptionsItemSelected(item,
 	// menuIdOffset,
 	// mapView)) {
 	// return true;

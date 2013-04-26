@@ -28,27 +28,25 @@ package org.oscim.renderer.overlays;
 // 5 R-Tree might be handy
 //
 
-import java.util.HashMap;
-
 import org.oscim.core.MapPosition;
 import org.oscim.core.Tile;
-import org.oscim.generator.JobTile;
 import org.oscim.graphics.Color;
 import org.oscim.graphics.Paint.Cap;
+import org.oscim.layers.tile.MapTile;
+import org.oscim.layers.tile.TileRenderLayer;
+import org.oscim.layers.tile.TileSet;
 import org.oscim.renderer.BufferObject;
 import org.oscim.renderer.GLRenderer;
 import org.oscim.renderer.GLRenderer.Matrices;
 import org.oscim.renderer.GLState;
-import org.oscim.renderer.LineRenderer;
-import org.oscim.renderer.MapTile;
-import org.oscim.renderer.PolygonRenderer;
-import org.oscim.renderer.TextureRenderer;
-import org.oscim.renderer.TileSet;
 import org.oscim.renderer.layer.Layer;
 import org.oscim.renderer.layer.Layers;
 import org.oscim.renderer.layer.LineLayer;
+import org.oscim.renderer.layer.LineRenderer;
+import org.oscim.renderer.layer.PolygonRenderer;
 import org.oscim.renderer.layer.TextItem;
 import org.oscim.renderer.layer.TextLayer;
+import org.oscim.renderer.layer.TextureRenderer;
 import org.oscim.theme.renderinstruction.Line;
 import org.oscim.utils.FastMath;
 import org.oscim.utils.OBB2D;
@@ -62,7 +60,7 @@ import android.opengl.GLES20;
 import android.os.SystemClock;
 
 public class TextOverlay extends BasicOverlay {
-	//private final static String TAG = TextOverlay.class.getName();
+private final static String TAG = TextOverlay.class.getName();
 	private final static float MIN_CAPTION_DIST = 5;
 	private final static float MIN_WAY_DIST = 3;
 
@@ -111,7 +109,7 @@ public class TextOverlay extends BasicOverlay {
 
 	private final float[] mTmpCoords = new float[8];
 
-	private final HashMap<MapTile, LabelTile> mActiveTiles;
+	//private final HashMap<MapTile, LabelTile> mActiveTiles;
 
 	class LabelTile {
 		Tile tile;
@@ -180,7 +178,7 @@ public class TextOverlay extends BasicOverlay {
 			mRun = false;
 
 			if (updateLabels()) {
-				mMapView.redrawMap(true);
+				mMapView.render();
 			} else {
 				mRun = true;
 			}
@@ -199,14 +197,16 @@ public class TextOverlay extends BasicOverlay {
 
 	private float mSquareRadius;
 	private int mRelabelCnt;
+	private final TileRenderLayer mTileLayer;
 
-	public TextOverlay(MapView mapView) {
+	public TextOverlay(MapView mapView, TileRenderLayer baseLayer) {
 		super(mapView);
-		mMapViewPosition = mapView.getMapViewPosition();
 
+		mMapViewPosition = mapView.getMapViewPosition();
+		mTileLayer = baseLayer;
 		layers.textureLayers = new TextLayer();
 		mTmpLayer = new TextLayer();
-		mActiveTiles = new HashMap<MapTile, LabelTile>();
+		//mActiveTiles = new HashMap<MapTile, LabelTile>();
 		mTmpPos = new MapPosition();
 		mThread = new LabelThread();
 		mThread.start();
@@ -350,7 +350,9 @@ public class TextOverlay extends BasicOverlay {
 			return false;
 
 		// get current tiles
-		mTileSet = GLRenderer.getVisibleTiles(mTileSet);
+		mTileSet = mTileLayer.getVisibleTiles(mTileSet);
+		if (mTileSet == null)
+			return false;
 
 		if (mTileSet.cnt == 0)
 			return false;
@@ -459,7 +461,7 @@ public class TextOverlay extends BasicOverlay {
 		/* add way labels */
 		for (int i = 0, n = mTileSet.cnt; i < n; i++) {
 			MapTile t = tiles[i];
-			if (t.state != JobTile.STATE_READY)
+			if (t.state != MapTile.STATE_READY)
 				continue;
 
 			float dx = (float) (t.tileX * Tile.SIZE - tileX);
@@ -525,7 +527,7 @@ public class TextOverlay extends BasicOverlay {
 		/* add caption */
 		for (int i = 0, n = mTileSet.cnt; i < n; i++) {
 			MapTile t = tiles[i];
-			if (t.state != JobTile.STATE_READY)
+			if (t.state != MapTile.STATE_READY)
 				continue;
 
 			float dx = (float) (t.tileX * Tile.SIZE - tileX);
@@ -605,7 +607,7 @@ public class TextOverlay extends BasicOverlay {
 		tl.labels = null;
 
 		// remove tile locks
-		GLRenderer.releaseTiles(mTileSet);
+		mTileLayer.releaseTiles(mTileSet);
 
 		// pass new labels for rendering
 		synchronized (this) {
@@ -692,14 +694,15 @@ public class TextOverlay extends BasicOverlay {
 
 			// set new TextLayer to be uploaded and rendered
 			layers.textureLayers = mNextLayer;
+			mNextLayer = null;
 
 			// make the 'labeled' MapPosition current
 			MapPosition tmp = mMapPosition;
 			mMapPosition = mTmpPos;
 			mTmpPos = tmp;
 
-			newData = true;
-			mNextLayer = null;
+			this.newData = true;
+
 			if (!(positionChanged || tilesChanged))
 				return;
 		}

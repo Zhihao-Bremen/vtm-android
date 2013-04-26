@@ -20,12 +20,13 @@ import java.nio.ShortBuffer;
 
 import org.oscim.core.MapPosition;
 import org.oscim.core.Tile;
-import org.oscim.generator.JobTile;
+import org.oscim.layers.tile.MapTile;
+import org.oscim.layers.tile.MapTile;
+import org.oscim.layers.tile.TileRenderLayer;
+import org.oscim.layers.tile.TileSet;
 import org.oscim.renderer.GLRenderer;
 import org.oscim.renderer.GLRenderer.Matrices;
 import org.oscim.renderer.GLState;
-import org.oscim.renderer.MapTile;
-import org.oscim.renderer.TileSet;
 import org.oscim.renderer.layer.ExtrusionLayer;
 import org.oscim.utils.GlUtils;
 import org.oscim.view.MapView;
@@ -39,8 +40,11 @@ import android.util.Log;
 public class ExtrusionOverlay extends RenderOverlay {
 	private final static String TAG = ExtrusionOverlay.class.getName();
 
-	public ExtrusionOverlay(MapView mapView) {
+	private final TileRenderLayer mTileLayer;
+
+	public ExtrusionOverlay(MapView mapView, org.oscim.layers.tile.TileRenderLayer tileRenderLayer) {
 		super(mapView);
+		mTileLayer = tileRenderLayer;
 	}
 
 	private static int[] shaderProgram = new int[2];
@@ -92,7 +96,10 @@ public class ExtrusionOverlay extends RenderOverlay {
 		}
 
 		int ready = 0;
-		mTileSet = mMapView.getTileManager().getActiveTiles(mTileSet);
+		mTileSet = mTileLayer.getVisibleTiles(mTileSet);
+		if (mTileSet == null)
+			return;
+
 		MapTile[] tiles = mTileSet.tiles;
 		// FIXME just release tiles in this case
 		if (mAlpha == 0 || curPos.zoomLevel < 16) {
@@ -135,11 +142,12 @@ public class ExtrusionOverlay extends RenderOverlay {
 			for (int i = 0; i < mTileSet.cnt; i++) {
 				if (!tiles[i].isVisible)
 					continue;
+
 				MapTile t = tiles[i];
 
 				for (byte j = 0; j < 4; j++) {
 					if ((t.proxies & (1 << j)) != 0) {
-						MapTile c = t.rel.child[j].tile;
+						MapTile c = t.rel.get(j);
 						el = getLayer(c);
 
 						if (el == null || !el.compiled)
@@ -157,7 +165,7 @@ public class ExtrusionOverlay extends RenderOverlay {
 
 	private static ExtrusionLayer getLayer(MapTile t) {
 		if (t.layers != null && t.layers.extrusionLayers != null
-				&& t.state == JobTile.STATE_READY)
+				&& t.state == MapTile.STATE_READY)
 			return (ExtrusionLayer) t.layers.extrusionLayers;
 		return null;
 	}
@@ -360,7 +368,7 @@ public class ExtrusionOverlay extends RenderOverlay {
 			_a * ((_r + _l + 1) / 255),
 			_a * ((_g + _l + 1) / 255),
 			_a * ((_b + _l) / 255),
-			_a,
+			0.8f,
 			// sligthly differ adjacent side
 			// faces to improve contrast
 			_a * ((_r - _s) / 255 + 0.01f),
@@ -375,8 +383,7 @@ public class ExtrusionOverlay extends RenderOverlay {
 			(_r - _o) / 255,
 			(_g - _o) / 255,
 			(_b - _o) / 255,
-			//			1, 0, 0,
-			1.0f,
+			0.9f,
 	};
 
 	final static String extrusionVertexShader = ""
@@ -396,24 +403,24 @@ public class ExtrusionOverlay extends RenderOverlay {
 			//+ "  z = gl_Position.z;"
 			+ "  if (u_mode == 0)"
 			//     roof / depth pass
-			+ "    color = u_color[0];"
+			+ "    color = u_color[0] * u_alpha;"
 			+ "  else {"
 			//    decrease contrast with distance
 			+ "   if (u_mode == 1){"
 			//     sides 1 - use 0xff00
 			//     scale direction to -0.5<>0.5
-			//+ "    float dir = abs(a_light.y / ff - 0.5);"
 			+ "    float dir = a_light.y / ff;"
 			+ "    float z = (0.98 + gl_Position.z * 0.02);"
 			+ "    color = u_color[1];"
 			+ "    color.rgb *= (0.85 + dir * 0.15) * z;"
+			+ "    color *= u_alpha;"
 			+ "  } else if (u_mode == 2){"
 			//     sides 2 - use 0x00ff
-			//+ "    float dir = abs(a_light.x / ff - 0.5);"
 			+ "    float dir = a_light.x / ff;"
 			+ "    float z = (0.98 + gl_Position.z * 0.02);"
-			+ "    color = u_color[2] * z;"
+			+ "    color = u_color[2];"
 			+ "    color.rgb *= (0.85 + dir * 0.15) * z;"
+			+ "    color *= u_alpha;"
 			+ "  } else {"
 			//     outline
 			+ "    float z = (0.8 - gl_Position.z * 0.2);"

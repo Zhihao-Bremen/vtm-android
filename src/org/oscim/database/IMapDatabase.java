@@ -15,7 +15,7 @@
  */
 package org.oscim.database;
 
-import org.oscim.generator.JobTile;
+import org.oscim.layers.tile.MapTile;
 
 /**
  *
@@ -32,7 +32,7 @@ public interface IMapDatabase {
 	 *            the callback which handles the extracted map elements.
 	 * @return true if successful
 	 */
-	public abstract QueryResult executeQuery(JobTile tile,
+	abstract QueryResult executeQuery(MapTile tile,
 			IMapDatabaseCallback mapDatabaseCallback);
 
 	/**
@@ -40,12 +40,12 @@ public interface IMapDatabase {
 	 * @throws IllegalStateException
 	 *             if no map is currently opened.
 	 */
-	public abstract MapInfo getMapInfo();
+	abstract MapInfo getMapInfo();
 
 	/**
 	 * @return true if a map database is currently opened, false otherwise.
 	 */
-	public abstract boolean isOpen();
+	abstract boolean isOpen();
 
 	/**
 	 * Opens MapDatabase
@@ -54,20 +54,88 @@ public interface IMapDatabase {
 	 *            the options.
 	 * @return a OpenResult containing an error message in case of a failure.
 	 */
-	public abstract OpenResult open(MapOptions options);
+	abstract OpenResult open(MapOptions options);
 
 	/**
 	 * Closes the map file and destroys all internal caches. Has no effect if no
 	 * map file is currently opened. Should also force to close Socket so that
 	 * thread cannot hang in socket.read
 	 */
-	public abstract void close();
+	abstract void close();
 
-	public abstract String getMapProjection();
+	abstract String getMapProjection();
 
 	/**
 	 * Cancel loading
 	 */
-	public abstract void cancel();
+	abstract void cancel();
+
+	public static enum QueryResult {
+		SUCCESS,
+		FAILED,
+		TILE_NOT_FOUND,
+		DELAYED,
+	}
+
+	/**
+	 * A FileOpenResult is a simple DTO which is returned by
+	 * IMapDatabase#open().
+	 */
+	public static class OpenResult {
+		/**
+		 * Singleton for a FileOpenResult instance with {@code success=true}.
+		 */
+		public static final OpenResult SUCCESS = new OpenResult();
+
+		private final String errorMessage;
+		private final boolean success;
+
+		/**
+		 * @param errorMessage
+		 *            a textual message describing the error, must not be null.
+		 */
+		public OpenResult(String errorMessage) {
+			if (errorMessage == null) {
+				throw new IllegalArgumentException("error message must not be null");
+			}
+
+			this.success = false;
+			this.errorMessage = errorMessage;
+		}
+
+		/**
+		 *
+		 */
+		public OpenResult() {
+			this.success = true;
+			this.errorMessage = null;
+		}
+
+		/**
+		 * @return a textual error description (might be null).
+		 */
+		public String getErrorMessage() {
+			return this.errorMessage;
+		}
+
+		/**
+		 * @return true if the file could be opened successfully, false
+		 *         otherwise.
+		 */
+		public boolean isSuccess() {
+			return this.success;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("FileOpenResult [success=");
+			stringBuilder.append(this.success);
+			stringBuilder.append(", errorMessage=");
+			stringBuilder.append(this.errorMessage);
+			stringBuilder.append("]");
+			return stringBuilder.toString();
+		}
+	}
 
 }

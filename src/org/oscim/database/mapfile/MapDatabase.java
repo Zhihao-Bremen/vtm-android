@@ -18,19 +18,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import org.oscim.core.GeometryBuffer;
+import org.oscim.core.GeometryBuffer.GeometryType;
+import org.oscim.core.MapElement;
 import org.oscim.core.Tag;
 import org.oscim.core.Tile;
 import org.oscim.database.IMapDatabase;
 import org.oscim.database.IMapDatabaseCallback;
-import org.oscim.database.IMapDatabaseCallback.WayData;
 import org.oscim.database.MapOptions;
-import org.oscim.database.OpenResult;
-import org.oscim.database.QueryResult;
 import org.oscim.database.mapfile.header.MapFileHeader;
 import org.oscim.database.mapfile.header.MapFileInfo;
 import org.oscim.database.mapfile.header.SubFileParameter;
-import org.oscim.generator.JobTile;
+import org.oscim.layers.tile.MapTile;
 
 import android.util.Log;
 
@@ -198,8 +196,9 @@ public class MapDatabase implements IMapDatabase {
 	private int mTileLongitude;
 	private int[] mIntBuffer;
 
-	private final GeometryBuffer mGeom = new GeometryBuffer(1 << 14, 1 << 8);
-	private final WayData mWay = new WayData();
+	//private final GeometryBuffer mElem = new GeometryBuffer(1 << 14, 1 << 8);
+	//private final WayData mWay = new WayData();
+	private final MapElement mElem = new MapElement();
 
 	private int minLat, minLon;
 	private Tile mTile;
@@ -211,7 +210,7 @@ public class MapDatabase implements IMapDatabase {
 	 * org.oscim.map.reader.MapDatabaseCallback)
 	 */
 	@Override
-	public QueryResult executeQuery(JobTile tile, IMapDatabaseCallback mapDatabaseCallback) {
+	public QueryResult executeQuery(MapTile tile, IMapDatabaseCallback mapDatabaseCallback) {
 
 		if (sMapFileHeader == null)
 			return QueryResult.FAILED;
@@ -668,10 +667,18 @@ public class MapDatabase implements IMapDatabase {
 			double sinLat = Math.sin(latitude * PI180);
 			latitude = (int) (Math.log((1.0 + sinLat) / (1.0 - sinLat)) * divy + dy);
 
-			mGeom.points[0] = longitude;
-			mGeom.points[1] = latitude;
-			mGeom.index[0] = 2;
-			mapDatabaseCallback.renderPOI(layer, curTags, mGeom);
+			mElem.clear();
+
+			mElem.startPoints();
+			mElem.addPoint(longitude, latitude);
+			mElem.type =  GeometryType.POINT;
+			mElem.set(curTags, layer);
+			mapDatabaseCallback.renderElement(mElem);
+
+//			mGeom.points[0] = longitude;
+//			mGeom.points[1] = latitude;
+//			mGeom.index[0] = 2;
+//			mapDatabaseCallback.renderPOI(layer, curTags, mGeom);
 
 		}
 
@@ -687,11 +694,11 @@ public class MapDatabase implements IMapDatabase {
 		}
 
 		//short[] wayLengths = new short[numBlocks];
-		short[] wayLengths = mGeom.ensureIndexSize(numBlocks, false);
+		short[] wayLengths = mElem.ensureIndexSize(numBlocks, false);
 		if (wayLengths.length > numBlocks)
 			wayLengths[numBlocks] = -1;
 
-		mGeom.pointPos = 0;
+		mElem.pointPos = 0;
 
 		// read the way coordinate blocks
 		for (int coordinateBlock = 0; coordinateBlock < numBlocks; ++coordinateBlock) {
@@ -723,8 +730,8 @@ public class MapDatabase implements IMapDatabase {
 
 		mReadBuffer.readSignedInt(buffer, length);
 
-		float[] outBuffer = mGeom.ensurePointSize(mGeom.pointPos + length, true);
-		int pointPos = mGeom.pointPos;
+		float[] outBuffer = mElem.ensurePointSize(mElem.pointPos + length, true);
+		int pointPos = mElem.pointPos;
 
 		// get the first way node latitude offset (VBE-S)
 		int wayNodeLatitude = mTileLatitude + buffer[0];
@@ -761,7 +768,7 @@ public class MapDatabase implements IMapDatabase {
 			}
 		}
 
-		mGeom.pointPos = pointPos;
+		mElem.pointPos = pointPos;
 
 		return cnt;
 	}
@@ -770,8 +777,8 @@ public class MapDatabase implements IMapDatabase {
 		int[] buffer = mIntBuffer;
 		mReadBuffer.readSignedInt(buffer, length);
 
-		float[] outBuffer = mGeom.ensurePointSize(mGeom.pointPos + length, true);
-		int pointPos = mGeom.pointPos;
+		float[] outBuffer = mElem.ensurePointSize(mElem.pointPos + length, true);
+		int pointPos = mElem.pointPos;
 
 		// get the first way node latitude single-delta offset (VBE-S)
 		int wayNodeLatitude = mTileLatitude + buffer[0];
@@ -803,7 +810,7 @@ public class MapDatabase implements IMapDatabase {
 			}
 		}
 
-		mGeom.pointPos = pointPos;
+		mElem.pointPos = pointPos;
 		return cnt;
 	}
 
@@ -974,18 +981,18 @@ public class MapDatabase implements IMapDatabase {
 					return false;
 
 				// wayDataContainer.textPos = textPos;
-				int l = mGeom.index[0];
+				int l = mElem.index[0];
 
-				boolean closed = mGeom.points[0] == mGeom.points[l - 2]
-						&& mGeom.points[1] == mGeom.points[l - 1];
+				boolean closed = mElem.points[0] == mElem.points[l - 2]
+						&& mElem.points[1] == mElem.points[l - 1];
 
-				projectToTile(mGeom.points, mGeom.index);
-				mWay.geom = mGeom;
-				mWay.layer = layer;
-				mWay.closed = closed;
-				mWay.tags = curTags;
+				projectToTile(mElem.points, mElem.index);
+				mElem.layer = layer;
 
-				mapDatabaseCallback.renderWay(mWay);
+				mElem.type = closed ? GeometryType.POLY : GeometryType.LINE;
+				mElem.set(tags, layer);
+
+				mapDatabaseCallback.renderElement(mElem);
 			}
 		}
 
