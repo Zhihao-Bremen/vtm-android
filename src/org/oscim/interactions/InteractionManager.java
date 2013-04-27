@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU Lesser General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oscim.evaluator;
+package org.oscim.interactions;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,6 +32,7 @@ import org.oscim.core.PointF;
 import org.oscim.utils.StringUtils;
 
 import android.util.Log;
+import android.view.MotionEvent;
 
 public final class InteractionManager
 {
@@ -39,6 +40,7 @@ public final class InteractionManager
 
 	private final ArrayList<Interaction> interactionList;
 	private String ID;
+	private double lat, lon;
 
 	// Constructs an empty action manager with an initial capacity of ten.
 	public InteractionManager(String deviceId)
@@ -68,6 +70,11 @@ public final class InteractionManager
 		}
 	}
 
+	public static Interaction analyze(MotionEvent e)
+	{
+		return null;
+	}
+
 	public void save(Interaction interaction)
 	{
 		if (interaction == null)
@@ -92,6 +99,16 @@ public final class InteractionManager
 	public int getNumOfActions()
 	{
 		return this.interactionList.size();
+	}
+
+	public double getLat()
+	{
+		return this.lat;
+	}
+
+	public double getLon()
+	{
+		return this.lon;
 	}
 
 	//	public void showAction(int index)
@@ -194,7 +211,7 @@ public final class InteractionManager
 		return true;
 	}
 
-	public boolean exportToXML(String path)
+	public boolean export_XML(String path)
 	{
 		File file;
 		Document document;
@@ -208,6 +225,8 @@ public final class InteractionManager
 		file = new File(path);
 		root = new Element("InteractionManager");
 		root.setAttribute("device", this.ID);
+		root.setAttribute("lat", String.valueOf(this.lat));
+		root.setAttribute("lon", String.valueOf(this.lon));
 		document = new Document(root);
 		xmlOutputter = new XMLOutputter();
 
@@ -218,8 +237,6 @@ public final class InteractionManager
 			interaction = new Element("Interaction");
 			interaction.setAttribute("start", String.valueOf(data.getStarttime()));
 			interaction.setAttribute("end", String.valueOf(data.getEndtime()));
-			interaction.setAttribute("lat", String.valueOf(data.getLat()));
-			interaction.setAttribute("lon", String.valueOf(data.getLon()));
 			root.addContent(interaction);
 
 			for (int j = 0; j < data.getNumOfPointers(); j++)
@@ -228,14 +245,14 @@ public final class InteractionManager
 				pointer.setAttribute("id", String.valueOf(j + 1));
 
 				s.delete(0, s.length());
-				s.append(data.getPointer_start(j).x).append(" ").append(data.getPointer_start(j).y)
-						.append(",");
-				moveList = data.getPointer_move(j);
+//				s.append(data.getPointer_start(j).x).append(" ").append(data.getPointer_start(j).y)
+//						.append(",");
+				moveList = data.getPointer_track(j);
 				for (int k = 0; k < moveList.size(); k++)
 				{
 					s.append(moveList.get(k).x).append(" ").append(moveList.get(k).y).append(",");
 				}
-				s.append(data.getPointer_end(j).x).append(" ").append(data.getPointer_end(j).y);
+//				s.append(data.getPointer_end(j).x).append(" ").append(data.getPointer_end(j).y);
 
 				pointer.setText(s.toString());
 				interaction.addContent(pointer);

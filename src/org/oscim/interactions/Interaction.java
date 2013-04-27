@@ -12,42 +12,41 @@
  * You should have received a copy of the GNU Lesser General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oscim.evaluator;
+package org.oscim.interactions;
 
 import java.util.ArrayList;
 
+import org.jdom2.Element;
 import org.oscim.core.MapPosition;
 import org.oscim.core.PointF;
 
 import android.util.Log;
+import android.view.MotionEvent;
 
-public class Interaction
+public abstract class Interaction
 {
-	private int numOfPointers;
-	private PointF pointers_start[], pointers_end[];
-	private ArrayList<PointF> pointers_move[];
+	private static final int NUM_POINTERS = 0;
+	private ArrayList<PointF> pointer_track[];
 	private long time_start, time_end;
 	private MapPosition position_start, position_end;
-	private double lat, lon;
 
-	public Interaction(int num,
-			PointF pointers_start[], ArrayList<PointF> pointers_move[], PointF pointers_end[],
+	public abstract Interaction recognize(MotionEvent e);
+
+	public abstract boolean execute();
+
+	public abstract Element log_XML();
+
+	public Interaction(ArrayList<PointF> pointer_track[],
 			long time_start, long time_end,
-			MapPosition position_start, MapPosition position_end,
-			double lat, double lon)
+			MapPosition position_start, MapPosition position_end)
 	{
-		if ((pointers_start.length == num) && (pointers_end.length == num))
+		if ( pointer_track.length == Interaction.NUM_POINTERS )
 		{
-			this.numOfPointers = num;
-			this.pointers_start = pointers_start;
-			this.pointers_move = pointers_move;
-			this.pointers_end = pointers_end;
+			this.pointer_track = pointer_track;
 			this.time_start = time_start;
 			this.time_end = time_end;
 			this.position_start = position_start;
 			this.position_end = position_end;
-			this.lat = lat;
-			this.lon = lon;
 		}
 		else
 		{
@@ -57,37 +56,17 @@ public class Interaction
 
 	public int getNumOfPointers()
 	{
-		return this.numOfPointers;
+		return Interaction.NUM_POINTERS;
 	}
 
-	public PointF getPointer_start(int index)
+	public ArrayList<PointF> getPointer_track(int index)
 	{
-		if (index >= numOfPointers)
+		if (index >= Interaction.NUM_POINTERS)
 		{
 			return null;
 		}
 
-		return this.pointers_start[index];
-	}
-
-	public ArrayList<PointF> getPointer_move(int index)
-	{
-		if (index >= numOfPointers)
-		{
-			return null;
-		}
-
-		return this.pointers_move[index];
-	}
-
-	public PointF getPointer_end(int index)
-	{
-		if (index >= numOfPointers)
-		{
-			return null;
-		}
-
-		return this.pointers_end[index];
+		return this.pointer_track[index];
 	}
 
 	public MapPosition getMapPosition_start()
@@ -108,15 +87,5 @@ public class Interaction
 	public long getEndtime()
 	{
 		return this.time_end;
-	}
-
-	public double getLat()
-	{
-		return this.lat;
-	}
-
-	public double getLon()
-	{
-		return this.lon;
 	}
 }

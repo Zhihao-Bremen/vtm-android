@@ -15,6 +15,8 @@
 package org.oscim.view;
 
 import org.oscim.core.Tile;
+import org.oscim.interactions.Interaction;
+import org.oscim.interactions.InteractionManager;
 import org.oscim.layers.InputLayer;
 
 import android.util.Log;
@@ -69,6 +71,13 @@ public class MapEventLayer extends InputLayer {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent e) {
+
+		Interaction interaction = InteractionManager.analyze(e);
+
+		if(interaction != null)
+		{
+			return interaction.execute();
+		}
 
 		int action = getAction(e);
 
