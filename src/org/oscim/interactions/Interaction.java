@@ -14,78 +14,70 @@
  */
 package org.oscim.interactions;
 
-import java.util.ArrayList;
-
 import org.jdom2.Element;
-import org.oscim.core.MapPosition;
-import org.oscim.core.PointF;
 
-import android.util.Log;
 import android.view.MotionEvent;
 
 public abstract class Interaction
 {
-	private static final int NUM_POINTERS = 0;
-	private ArrayList<PointF> pointer_track[];
-	private long time_start, time_end;
-	private MapPosition position_start, position_end;
+//	private static final int NUM_POINTERS = 0;
+//	private ArrayList<PointF> pointer_track[];
+//	private long time_start, time_end;
+//	private MapPosition position_start, position_end;
 
-	public abstract Interaction recognize(MotionEvent e);
+	/**
+	 * this method must been overridden and is to recognize, to which class the given {@link MotionEvent} belongs.
+	 *
+	 * @param me
+	 * the {@link MotionEvent} to recognize that must be ACTION_MOVE.
+	 *
+	 * @param buf
+	 * the buffer to save information of {@link Interaction}.
+	 *
+	 * @return whether the {@link MotionEvent} is the corresponding interaction.
+	 */
+	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
+	{
+		return false;
+	}
 
-	public abstract boolean execute();
+	/**
+	 * this method must been overridden and is to execute the corresponding interaction.
+	 *
+	 * @return true if the interaction is correctly executed. Otherwise, false.
+	 */
+	public static boolean execute()
+	{
+		return false;
+	}
 
 	public abstract Element log_XML();
 
-	public Interaction(ArrayList<PointF> pointer_track[],
-			long time_start, long time_end,
-			MapPosition position_start, MapPosition position_end)
-	{
-		if ( pointer_track.length == Interaction.NUM_POINTERS )
-		{
-			this.pointer_track = pointer_track;
-			this.time_start = time_start;
-			this.time_end = time_end;
-			this.position_start = position_start;
-			this.position_end = position_end;
-		}
-		else
-		{
-			Log.d("Interaction", "creation failed because of the difference size");
-		}
-	}
+//	(ArrayList<PointF> pointer_track[],
+//			long time_start, long time_end,
+//			MapPosition position_start, MapPosition position_end)
+//	{
+//		if ( pointer_track.length == Interaction.NUM_POINTERS )
+//		{
+//			this.pointer_track = pointer_track;
+//			this.time_start = time_start;
+//			this.time_end = time_end;
+//			this.position_start = position_start;
+//			this.position_end = position_end;
+//		}
+//		else
+//		{
+//			Log.d("Interaction", "creation failed because of the difference size");
+//		}
+//	}
 
-	public int getNumOfPointers()
-	{
-		return Interaction.NUM_POINTERS;
-	}
-
-	public ArrayList<PointF> getPointer_track(int index)
-	{
-		if (index >= Interaction.NUM_POINTERS)
-		{
-			return null;
-		}
-
-		return this.pointer_track[index];
-	}
-
-	public MapPosition getMapPosition_start()
-	{
-		return this.position_start;
-	}
-
-	public MapPosition getMapPosition_end()
-	{
-		return this.position_end;
-	}
-
-	public long getStarttime()
-	{
-		return this.time_start;
-	}
-
-	public long getEndtime()
-	{
-		return this.time_end;
-	}
+//	public ArrayList<PointF> getPointer_track(int index)
+//	{
+//		if (index >= Interaction.NUM_POINTERS)
+//		{
+//			return null;
+//		}
+//
+//		return this.pointer_track[index];
+//	}
 }

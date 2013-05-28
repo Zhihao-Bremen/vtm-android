@@ -71,6 +71,7 @@ public class MapPosition {
 		this.zoomLevel = other.zoomLevel;
 		this.angle = other.angle;
 		this.scale = other.scale;
+		this.tilt = other.tilt;
 		this.x = other.x;
 		this.y = other.y;
 	}

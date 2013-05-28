@@ -14,9 +14,17 @@
  */
 package org.oscim.view;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+
 import org.oscim.core.Tile;
 import org.oscim.interactions.Interaction;
+import org.oscim.interactions.InteractionBuffer;
 import org.oscim.interactions.InteractionManager;
+import org.oscim.interactions.Move;
+import org.oscim.interactions.Rotation;
+import org.oscim.interactions.Tilt;
+import org.oscim.interactions.Zoom;
 import org.oscim.layers.InputLayer;
 
 import android.util.Log;
@@ -63,51 +71,169 @@ public class MapEventLayer extends InputLayer {
 	protected static final float PINCH_TILT_THRESHOLD = 1f;
 
 	private final MapViewPosition mMapPosition;
+	private final InteractionManager mInteractionManager;
+
+	private InteractionBuffer buf = null;
 
 	public MapEventLayer(MapView mapView) {
 		super(mapView);
 		mMapPosition = mapView.getMapViewPosition();
+		mInteractionManager = mapView.getInteractionManager();
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent e) {
 
-		Interaction interaction = InteractionManager.analyze(e);
-
-		if(interaction != null)
-		{
-			return interaction.execute();
-		}
+		//System.out.println("onTouchEvent in MapEventLayer");
 
 		int action = getAction(e);
 
-		if (action == MotionEvent.ACTION_DOWN) {
-			mBeginRotate = false;
-			mBeginTilt = false;
-			mBeginScale = false;
-			mDoubleTap = false;
-			mWasMulti = false;
+		if (action == MotionEvent.ACTION_DOWN)
+		{
+			System.out.print("DOWN: ");
+			for (int i = 0; i < e.getPointerCount(); i ++)
+			{
+				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+			}
+			System.out.println("|");
 
-			mPrevX = e.getX(0);
-			mPrevY = e.getY(0);
-			return true; //onActionDown(e);
-		} else if (action == MotionEvent.ACTION_MOVE) {
-			return onActionMove(e);
-		} else if (action == MotionEvent.ACTION_UP) {
+			buf = new InteractionBuffer(e, mMapView);
 			return true;
-		} else if (action == MotionEvent.ACTION_CANCEL) {
-			mDoubleTap = false;
+		}
+		else if (action == MotionEvent.ACTION_MOVE)
+		{
+			System.out.print("MOVE: ");
+			for (int i = 0; i < e.getPointerCount(); i ++)
+			{
+				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+			}
+			System.out.println("|");
+
+			Class<? extends Interaction> type = null;
+
+			if (Move.recognize(e, buf))
+			{
+				type = Move.class;
+			}
+			else if (Rotation.recognize(e, buf))
+			{
+				type = Rotation.class;
+			}
+			else if (Zoom.recognize(e, buf))
+			{
+				type = Zoom.class;
+			}
+			else if (Tilt.recognize(e, buf))
+			{
+				type = Tilt.class;
+			}
+			else
+			{
+				return true;
+			}
+
+			if (buf.className == null)
+			{
+				buf.className = type;
+			}
+			else if (!buf.className.equals(type))
+			{
+				updateInteractionManager();
+				buf.clean();
+				buf.className = type;
+			}
+
+			try
+			{
+				Method method = type.getMethod("execute", InteractionBuffer.class);
+				method.invoke(null, buf);
+			}
+			catch (Exception exception)
+			{
+				exception.printStackTrace();
+			}
+
+			buf.update(e);
+
 			return true;
-		} else if (action == MotionEvent.ACTION_POINTER_DOWN) {
-			mWasMulti = true;
-			updateMulti(e);
+		}
+		else if (action == MotionEvent.ACTION_UP)
+		{
+			System.out.print("UP: ");
+			for (int i = 0; i < e.getPointerCount(); i ++)
+			{
+				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+			}
+			System.out.println("|");
+
+			buf.update(e);
+
+			updateInteractionManager();
+
 			return true;
-		} else if (action == MotionEvent.ACTION_POINTER_UP) {
-			updateMulti(e);
+		}
+		else if (action == MotionEvent.ACTION_POINTER_DOWN | action == MotionEvent.ACTION_POINTER_UP)
+		{
+			System.out.print("POINTER: ");
+			for (int i = 0; i < e.getPointerCount(); i ++)
+			{
+				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+			}
+			System.out.println("|");
+
+			buf.update(e);
+
+			updateInteractionManager();
+
+			buf = new InteractionBuffer(e, this.mMapView);
+
 			return true;
 		}
 
+//		if (action == MotionEvent.ACTION_DOWN) {
+//			mBeginRotate = false;
+//			mBeginTilt = false;
+//			mBeginScale = false;
+//			mDoubleTap = false;
+//			mWasMulti = false;
+//
+//			mPrevX = e.getX(0);
+//			mPrevY = e.getY(0);
+//			return true; //onActionDown(e);
+//		} else if (action == MotionEvent.ACTION_MOVE) {
+//			return onActionMove(e);
+//		} else if (action == MotionEvent.ACTION_UP) {
+//			return true;
+//		} else if (action == MotionEvent.ACTION_CANCEL) {
+//			mDoubleTap = false;
+//			return true;
+//		} else if (action == MotionEvent.ACTION_POINTER_DOWN) {
+//			mWasMulti = true;
+//			updateMulti(e);
+//			return true;
+//		} else if (action == MotionEvent.ACTION_POINTER_UP) {
+//			updateMulti(e);
+//			return true;
+//		}
+
 		return false;
+	}
+
+	private void updateInteractionManager()
+	{
+		try
+		{
+			if (buf.className != null)
+			{
+				Constructor<?> constructor = buf.className.getConstructor(InteractionBuffer.class);
+				Interaction interaction = (Interaction)constructor.newInstance(buf);
+				mInteractionManager.save(interaction);
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	private static int getAction(MotionEvent e) {
@@ -269,11 +395,11 @@ public class MapEventLayer extends InputLayer {
 	public boolean onScroll(final MotionEvent e1, final MotionEvent e2, final float distanceX,
 			final float distanceY) {
 
-		if (e2.getPointerCount() == 1) {
-			mMapPosition.moveMap(-distanceX, -distanceY);
-			mMapView.redrawMap(true);
-			return true;
-		}
+//		if (e2.getPointerCount() == 1) {
+//			mMapPosition.moveMap(-distanceX, -distanceY);
+//			mMapView.redrawMap(true);
+//			return true;
+//		}
 
 		return false;
 	}
@@ -300,12 +426,12 @@ public class MapEventLayer extends InputLayer {
 		//	float move = Math.min(mMapView.getWidth(), mMapView.getHeight()) * 2 / 3;
 		//	mMapPosition.animateTo(vx * move, vy * move, 250);
 		//} else {
-		float s = (200 / mMapView.dpi);
+		float s = (200 / MapView.dpi);
 
-		mMapPosition.animateFling(
-				Math.round(velocityX * s),
-				Math.round(velocityY * s),
-				-w, w, -h, h);
+//		mMapPosition.animateFling(
+//				Math.round(velocityX * s),
+//				Math.round(velocityY * s),
+//				-w, w, -h, h);
 		return true;
 	}
 

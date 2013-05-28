@@ -15,6 +15,7 @@
  */
 package org.oscim.view;
 
+import java.io.File;
 import java.util.List;
 
 import org.oscim.core.BoundingBox;
@@ -22,6 +23,7 @@ import org.oscim.core.GeoPoint;
 import org.oscim.core.MapPosition;
 import org.oscim.core.Tile;
 import org.oscim.database.MapOptions;
+import org.oscim.interactions.InteractionManager;
 import org.oscim.layers.Layer;
 import org.oscim.layers.tile.BitmapTileLayer;
 import org.oscim.layers.tile.MapTileLayer;
@@ -32,6 +34,10 @@ import org.oscim.overlay.Overlay;
 import org.oscim.renderer.GLView;
 
 import android.content.Context;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.Environment;
+import android.telephony.TelephonyManager;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -46,6 +52,8 @@ public class MapView extends RelativeLayout {
 
 	final static String TAG = MapView.class.getName();
 
+	private static final String PATH = Environment.getExternalStorageDirectory().getPath() + File.separator + "interactions.xml";
+
 	public static final boolean debugFrameTime = false;
 	public static final boolean testRegionZoom = false;
 
@@ -58,6 +66,8 @@ public class MapView extends RelativeLayout {
 	private final LayerManager mLayerManager;
 	private final MapViewPosition mMapViewPosition;
 	private final MapPosition mMapPosition;
+
+	private final InteractionManager mInteractionManager;
 
 	private final Compass mCompass;
 
@@ -114,6 +124,18 @@ public class MapView extends RelativeLayout {
 		mMapPosition = new MapPosition();
 
 		mLayerManager = new LayerManager(context);
+
+		TelephonyManager mTelephonyManager = (TelephonyManager) this.getContext().getSystemService(Context.TELEPHONY_SERVICE);
+		LocationManager mLocationManager = (LocationManager) this.getContext().getSystemService(Context.LOCATION_SERVICE);
+		Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+		if (location == null)
+		{
+			mInteractionManager = new InteractionManager(mTelephonyManager.getDeviceId(), Double.NaN, Double.NaN);
+		}
+		else
+		{
+			mInteractionManager = new InteractionManager(mTelephonyManager.getDeviceId(), location.getLatitude(), location.getLongitude());
+		}
 
 		mCompass = new Compass(mapActivity, this);
 
@@ -190,10 +212,17 @@ public class MapView extends RelativeLayout {
 	public void onStop() {
 		Log.d(TAG, "onStop");
 		//mLayerManager.destroy();
+
+		if (mInteractionManager.exportToXML(PATH))
+		{
+			//mInteractionManager.sendToServer(PATH, "134.102.148.24", 2000);
+		}
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent motionEvent) {
+
+		//System.out.println("onTouchEvent in MapView");
 
 		if (!isClickable())
 			return false;
@@ -310,6 +339,10 @@ public class MapView extends RelativeLayout {
 	 */
 	public MapViewPosition getMapViewPosition() {
 		return mMapViewPosition;
+	}
+
+	public InteractionManager getInteractionManager() {
+		return mInteractionManager;
 	}
 
 	/**
