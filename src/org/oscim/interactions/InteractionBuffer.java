@@ -25,38 +25,43 @@ import android.view.MotionEvent;
 
 public final class InteractionBuffer
 {
-	private final int num_pointers;
-	private final ArrayList<PointF> pointer_track[];
+	private int num_pointers;
+	private ArrayList<PointF> pointer_track[];
 	private long time_start, time_end;
 	private final MapPosition position_start, position_end;
 
 	public final MapView mapView;
 	public Class<? extends Interaction> className;
-	public float X[], Y[], focusX, focusY, tilt;
-	public double preDistance, curDistace, preRad, curRad;
+	public boolean finished;
+	public float preX[], curX[], preY[], curY[], focusX, focusY, tilt;
+	public double preDistance, curDistance, preRad, curRad;
 
 	public InteractionBuffer(MotionEvent e, MapView mapView)
 	{
 		this.className = null;
+		this.finished = false;
 		this.num_pointers = e.getPointerCount();
 		this.pointer_track = new ArrayList[this.num_pointers];
-		this.X = new float[this.num_pointers];
-		this.Y = new float[this.num_pointers];
+		this.preX = new float[this.num_pointers];
+		this.preY = new float[this.num_pointers];
+		this.curX = new float[this.num_pointers];
+		this.curY = new float[this.num_pointers];
 		for(int i = 0; i < this.num_pointers; i ++)
 		{
 			this.pointer_track[i] = new ArrayList<PointF>();
-			this.X[i] = e.getX(i);
-			this.Y[i] = e.getY(i);
-			this.pointer_track[i].add(new PointF(this.X[i], this.Y[i]));
+			this.preX[i] = e.getX(i);
+			this.preY[i] = e.getY(i);
+			this.pointer_track[i].add(new PointF(this.preX[i], this.preY[i]));
 		}
 		if (this.num_pointers == 2)
 		{
-			double dx = X[0] - X[1];
-			double dy = Y[0] - Y[1];
+			double dx = preX[0] - preX[1];
+			double dy = preY[0] - preY[1];
 			this.preDistance = Math.sqrt(dx * dx + dy * dy);
 			this.preRad = Math.atan2(dy, dx);
 		}
-		this.time_start = this.time_end = System.currentTimeMillis() - SystemClock.uptimeMillis() + e.getEventTime();
+		this.time_start = System.currentTimeMillis() - SystemClock.uptimeMillis() + e.getEventTime();
+		this.time_end = -1;
 		this.mapView = mapView;
 		this.position_start = new MapPosition();
 		this.mapView.getMapViewPosition().getMapPosition(this.position_start);
@@ -66,31 +71,70 @@ public final class InteractionBuffer
 
 	public void update(MotionEvent e)
 	{
-		if (e.getPointerCount() == this.num_pointers)
+		if (!this.finished)
 		{
-			PointF point;
+			assert this.num_pointers == e.getPointerCount();
+
 			for(int i = 0; i < this.num_pointers; i ++)
 			{
-				point = new PointF(e.getX(i), e.getY(i));
-				pointer_track[i].add(point);
+				this.curX[i] = e.getX(i);
+				this.curY[i] = e.getY(i);
+				this.pointer_track[i].add(new PointF(this.curX[i], this.curY[i]));
+			}
+			if (this.num_pointers == 2)
+			{
+				double dx = curX[0] - curX[1];
+				double dy = curY[0] - curY[1];
+				this.curDistance = Math.sqrt(dx * dx + dy * dy);
+				this.curRad = Math.atan2(dy, dx);
 			}
 		}
-
-		this.time_end = System.currentTimeMillis() - SystemClock.uptimeMillis() + e.getEventTime();
-		this.mapView.getMapViewPosition().getMapPosition(this.position_end);
 	}
 
-	public void clean()
+	public void updateMulti(MotionEvent e)
 	{
-		//this.className = null;
-		this.time_start = this.time_end;
-		this.position_start.copy(position_end);
-		for (int i = 0; i < this.num_pointers; i ++)
+		if (this.className == null)
 		{
-			while (this.pointer_track[i].size() > 1)
+			this.num_pointers = e.getPointerCount();
+			this.pointer_track = new ArrayList[this.num_pointers];
+			this.preX = new float[this.num_pointers];
+			this.preY = new float[this.num_pointers];
+			this.curX = new float[this.num_pointers];
+			this.curY = new float[this.num_pointers];
+			for(int i = 0; i < this.num_pointers; i ++)
 			{
-				this.pointer_track[i].remove(0);
+				this.pointer_track[i] = new ArrayList<PointF>();
+				this.preX[i] = e.getX(i);
+				this.preY[i] = e.getY(i);
+				this.pointer_track[i].add(new PointF(this.preX[i], this.preY[i]));
 			}
+			if (this.num_pointers == 2)
+			{
+				double dx = preX[0] - preX[1];
+				double dy = preY[0] - preY[1];
+				this.preDistance = Math.sqrt(dx * dx + dy * dy);
+				this.preRad = Math.atan2(dy, dx);
+			}
+			this.time_start = System.currentTimeMillis() - SystemClock.uptimeMillis() + e.getEventTime();
+		}
+		else
+		{
+			if (!this.finished)
+			{
+				this.time_end = System.currentTimeMillis() - SystemClock.uptimeMillis() + e.getEventTime();
+				this.mapView.getMapViewPosition().getMapPosition(this.position_end);
+				this.finished = true;
+			}
+		}
+	}
+
+	public void updateEnd(MotionEvent e)
+	{
+		if (!this.finished)
+		{
+			this.time_end = System.currentTimeMillis() - SystemClock.uptimeMillis() + e.getEventTime();
+			this.mapView.getMapViewPosition().getMapPosition(this.position_end);
+			this.finished = true;
 		}
 	}
 

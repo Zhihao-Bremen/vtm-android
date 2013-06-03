@@ -14,11 +14,7 @@
  */
 package org.oscim.view;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-
 import org.oscim.core.Tile;
-import org.oscim.interactions.Interaction;
 import org.oscim.interactions.InteractionBuffer;
 import org.oscim.interactions.InteractionManager;
 import org.oscim.interactions.Move;
@@ -109,51 +105,45 @@ public class MapEventLayer extends InputLayer {
 			}
 			System.out.println("|");
 
-			Class<? extends Interaction> type = null;
+			buf.update(e);
 
 			if (Move.recognize(e, buf))
 			{
-				type = Move.class;
+				Move.execute(buf);
 			}
 			else if (Rotation.recognize(e, buf))
 			{
-				type = Rotation.class;
+				Rotation.execute(buf);
 			}
 			else if (Zoom.recognize(e, buf))
 			{
-				type = Zoom.class;
+				Zoom.execute(buf);
 			}
 			else if (Tilt.recognize(e, buf))
 			{
-				type = Tilt.class;
-			}
-			else
-			{
-				return true;
+				Tilt.execute(buf);
 			}
 
-			if (buf.className == null)
-			{
-				buf.className = type;
-			}
-			else if (!buf.className.equals(type))
-			{
-				updateInteractionManager();
-				buf.clean();
-				buf.className = type;
-			}
+//			if (buf.className == null)
+//			{
+//				buf.className = type;
+//			}
+//			else if (!buf.className.equals(type))
+//			{
+//				updateInteractionManager();
+//				buf.clean();
+//				buf.className = type;
+//			}
 
-			try
-			{
-				Method method = type.getMethod("execute", InteractionBuffer.class);
-				method.invoke(null, buf);
-			}
-			catch (Exception exception)
-			{
-				exception.printStackTrace();
-			}
-
-			buf.update(e);
+//			try
+//			{
+//				Method method = type.getMethod("execute", InteractionBuffer.class);
+//				method.invoke(null, buf);
+//			}
+//			catch (Exception exception)
+//			{
+//				exception.printStackTrace();
+//			}
 
 			return true;
 		}
@@ -166,13 +156,28 @@ public class MapEventLayer extends InputLayer {
 			}
 			System.out.println("|");
 
-			buf.update(e);
+			buf.updateEnd(e);
 
-			updateInteractionManager();
+			if (Move.class.equals(buf.className))
+			{
+				mInteractionManager.save(new Move(buf));
+			}
+			else if (Zoom.class.equals(buf.className))
+			{
+				mInteractionManager.save(new Zoom(buf));
+			}
+			else if (Rotation.class.equals(buf.className))
+			{
+				mInteractionManager.save(new Rotation(buf));
+			}
+			else if (Tilt.class.equals(buf.className))
+			{
+				mInteractionManager.save(new Tilt(buf));
+			}
 
 			return true;
 		}
-		else if (action == MotionEvent.ACTION_POINTER_DOWN | action == MotionEvent.ACTION_POINTER_UP)
+		else if (action == MotionEvent.ACTION_POINTER_DOWN || action == MotionEvent.ACTION_POINTER_UP)
 		{
 			System.out.print("POINTER: ");
 			for (int i = 0; i < e.getPointerCount(); i ++)
@@ -181,11 +186,7 @@ public class MapEventLayer extends InputLayer {
 			}
 			System.out.println("|");
 
-			buf.update(e);
-
-			updateInteractionManager();
-
-			buf = new InteractionBuffer(e, this.mMapView);
+			buf.updateMulti(e);
 
 			return true;
 		}
@@ -217,23 +218,6 @@ public class MapEventLayer extends InputLayer {
 //		}
 
 		return false;
-	}
-
-	private void updateInteractionManager()
-	{
-		try
-		{
-			if (buf.className != null)
-			{
-				Constructor<?> constructor = buf.className.getConstructor(InteractionBuffer.class);
-				Interaction interaction = (Interaction)constructor.newInstance(buf);
-				mInteractionManager.save(interaction);
-			}
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
 	}
 
 	private static int getAction(MotionEvent e) {

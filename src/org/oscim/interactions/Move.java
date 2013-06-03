@@ -25,6 +25,7 @@ import android.view.MotionEvent;
 
 public class Move extends Interaction
 {
+	public static final double ROTATE_THRESHOLD = 5.0;
 	public static final int NUM_POINTERS = 1;
 	private final long time_start, time_end;
 	private final ArrayList<PointF> pointer_track;
@@ -47,6 +48,11 @@ public class Move extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
+		if (buf.finished)
+		{
+			return false;
+		}
+
 		if (buf.className != null && buf.className != Move.class)
 		{
 			return false;
@@ -57,20 +63,35 @@ public class Move extends Interaction
 			return false;
 		}
 
-		buf.focusX = e.getX(0) - buf.X[0];
-		buf.focusY = e.getY(0) - buf.Y[0];
+		buf.focusX = buf.curX[0] - buf.preX[0];
+		buf.focusY = buf.curY[0] - buf.preY[0];
 
-		buf.X[0] = e.getX(0);
-		buf.Y[0] = e.getY(0);
+		if (buf.focusX * buf.focusX + buf.focusY * buf.focusY < ROTATE_THRESHOLD * ROTATE_THRESHOLD)
+		{
+			return false;
+		}
+
+		if (buf.className == null)
+		{
+			buf.className = Move.class;
+		}
 
 		return true;
 	}
 
 	public static void execute(InteractionBuffer buf)
 	{
-		System.out.println("Move: " + buf.focusX + ", " + buf.focusY);
+		System.out.println("Scale");
+//		System.out.println(buf.preX[0] + "|" + buf.preY[0]);
+//		System.out.println(buf.curX[0] + "|" + buf.curY[0]);
+//		System.out.println("disX: " + buf.focusX + "|disY: " + buf.focusY);
 		buf.mapView.getMapViewPosition().moveMap(buf.focusX, buf.focusY);
 		buf.mapView.redrawMap(true);
+
+		buf.preX[0] = buf.curX[0];
+		buf.preY[0] = buf.curY[0];
+		buf.preDistance = buf.curDistance;
+		buf.preRad = buf.curRad;
 	}
 
 	@Override

@@ -28,25 +28,22 @@ import org.oscim.renderer.overlays.RenderOverlay;
 
 import android.content.Context;
 import android.util.Log;
-import android.view.GestureDetector;
-import android.view.GestureDetector.OnDoubleTapListener;
-import android.view.GestureDetector.OnGestureListener;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
-public class LayerManager extends AbstractList<Layer> implements OnGestureListener,
-		OnDoubleTapListener {
+public class LayerManager extends AbstractList<Layer> {//implements OnGestureListener,
+		//OnDoubleTapListener {
 	private final static String TAG = LayerManager.class.getName();
 	private final static boolean debugInput = false;
 
-	private final GestureDetector mGestureDetector;
+	//private final GestureDetector mGestureDetector;
 
 	private final CopyOnWriteArrayList<Layer> mLayerList;
 
 	LayerManager(Context context) {
 		mLayerList = new CopyOnWriteArrayList<Layer>();
-		mGestureDetector = new GestureDetector(context, this);
-		mGestureDetector.setOnDoubleTapListener(this);
+		//mGestureDetector = new GestureDetector(context, this);
+		//mGestureDetector.setOnDoubleTapListener(this);
 	}
 
 	@Override
@@ -79,9 +76,9 @@ public class LayerManager extends AbstractList<Layer> implements OnGestureListen
 
 	public boolean handleMotionEvent(MotionEvent e) {
 
-		if (!mCancelGesture)
-			if (mGestureDetector.onTouchEvent(e))
-				return true;
+//		if (!mCancelGesture)
+//			if (mGestureDetector.onTouchEvent(e))
+//				return true;
 
 		if (mCancelGesture) {
 			int action = e.getAction();
@@ -237,134 +234,134 @@ public class LayerManager extends AbstractList<Layer> implements OnGestureListen
 
 	/* GestureDetector.OnDoubleTapListener */
 
-	@Override
-	public boolean onDoubleTap(final MotionEvent e) {
-		if (mDirtyLayers)
-			updateLayers();
+//	@Override
+//	public boolean onDoubleTap(final MotionEvent e) {
+//		if (mDirtyLayers)
+//			updateLayers();
+//
+//		for (InputLayer o : mInputLayer) {
+//			if (o.onDoubleTap(e)) {
+//				if (debugInput)
+//					Log.d(TAG, "onDoubleTap\t" + o.getClass());
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 
-		for (InputLayer o : mInputLayer) {
-			if (o.onDoubleTap(e)) {
-				if (debugInput)
-					Log.d(TAG, "onDoubleTap\t" + o.getClass());
-				return true;
-			}
-		}
-		return false;
-	}
+//	@Override
+//	public boolean onDoubleTapEvent(final MotionEvent e) {
+//		if (mDirtyLayers)
+//			updateLayers();
+//
+//		for (InputLayer o : mInputLayer) {
+//			if (o.onDoubleTapEvent(e)) {
+//				if (debugInput)
+//					Log.d(TAG, "onDoubleTapEvent\t" + o.getClass());
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 
-	@Override
-	public boolean onDoubleTapEvent(final MotionEvent e) {
-		if (mDirtyLayers)
-			updateLayers();
-
-		for (InputLayer o : mInputLayer) {
-			if (o.onDoubleTapEvent(e)) {
-				if (debugInput)
-					Log.d(TAG, "onDoubleTapEvent\t" + o.getClass());
-				return true;
-			}
-		}
-		return false;
-	}
-
-	@Override
-	public boolean onSingleTapConfirmed(final MotionEvent e) {
-		if (mDirtyLayers)
-			updateLayers();
-
-		for (InputLayer o : mInputLayer) {
-			if (o.onSingleTapConfirmed(e)) {
-				if (debugInput)
-					Log.d(TAG, "onSingleTapConfirmed\tt" + o.getClass());
-				return true;
-			}
-		}
-		return false;
-	}
+//	@Override
+//	public boolean onSingleTapConfirmed(final MotionEvent e) {
+//		if (mDirtyLayers)
+//			updateLayers();
+//
+//		for (InputLayer o : mInputLayer) {
+//			if (o.onSingleTapConfirmed(e)) {
+//				if (debugInput)
+//					Log.d(TAG, "onSingleTapConfirmed\tt" + o.getClass());
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 
 	/* OnGestureListener */
 
-	@Override
-	public boolean onDown(final MotionEvent pEvent) {
-		if (mDirtyLayers)
-			updateLayers();
+//	@Override
+//	public boolean onDown(final MotionEvent pEvent) {
+//		if (mDirtyLayers)
+//			updateLayers();
+//
+//		for (InputLayer o : mInputLayer) {
+//			if (o.onDown(pEvent)) {
+//				if (debugInput)
+//					Log.d(TAG, "onDown\t" + o.getClass());
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 
-		for (InputLayer o : mInputLayer) {
-			if (o.onDown(pEvent)) {
-				if (debugInput)
-					Log.d(TAG, "onDown\t" + o.getClass());
-				return true;
-			}
-		}
-		return false;
-	}
+//	@Override
+//	public boolean onFling(final MotionEvent pEvent1, final MotionEvent pEvent2,
+//			final float pVelocityX, final float pVelocityY) {
+//		if (mDirtyLayers)
+//			updateLayers();
+//
+//		for (InputLayer o : mInputLayer) {
+//			if (o.onFling(pEvent1, pEvent2, pVelocityX, pVelocityY)) {
+//				if (debugInput)
+//					Log.d(TAG, "onFling\t" + o.getClass());
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 
-	@Override
-	public boolean onFling(final MotionEvent pEvent1, final MotionEvent pEvent2,
-			final float pVelocityX, final float pVelocityY) {
-		if (mDirtyLayers)
-			updateLayers();
+//	@Override
+//	public void onLongPress(final MotionEvent pEvent) {
+//		if (mDirtyLayers)
+//			updateLayers();
+//
+//		for (InputLayer o : mInputLayer)
+//			if (o.onLongPress(pEvent))
+//				return;
+//	}
 
-		for (InputLayer o : mInputLayer) {
-			if (o.onFling(pEvent1, pEvent2, pVelocityX, pVelocityY)) {
-				if (debugInput)
-					Log.d(TAG, "onFling\t" + o.getClass());
-				return true;
-			}
-		}
-		return false;
-	}
+//	@Override
+//	public boolean onScroll(final MotionEvent pEvent1, final MotionEvent pEvent2,
+//			final float pDistanceX, final float pDistanceY) {
+//		if (mDirtyLayers)
+//			updateLayers();
+//
+//		for (InputLayer o : mInputLayer) {
+//			if (o.onScroll(pEvent1, pEvent2, pDistanceX, pDistanceY)) {
+//				if (debugInput)
+//					Log.d(TAG, "onScroll\t" + o.getClass());
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 
-	@Override
-	public void onLongPress(final MotionEvent pEvent) {
-		if (mDirtyLayers)
-			updateLayers();
+//	@Override
+//	public void onShowPress(final MotionEvent pEvent) {
+//		if (mDirtyLayers)
+//			updateLayers();
+//
+//		for (InputLayer o : mInputLayer)
+//			o.onShowPress(pEvent);
+//
+//	}
 
-		for (InputLayer o : mInputLayer)
-			if (o.onLongPress(pEvent))
-				return;
-	}
-
-	@Override
-	public boolean onScroll(final MotionEvent pEvent1, final MotionEvent pEvent2,
-			final float pDistanceX, final float pDistanceY) {
-		if (mDirtyLayers)
-			updateLayers();
-
-		for (InputLayer o : mInputLayer) {
-			if (o.onScroll(pEvent1, pEvent2, pDistanceX, pDistanceY)) {
-				if (debugInput)
-					Log.d(TAG, "onScroll\t" + o.getClass());
-				return true;
-			}
-		}
-		return false;
-	}
-
-	@Override
-	public void onShowPress(final MotionEvent pEvent) {
-		if (mDirtyLayers)
-			updateLayers();
-
-		for (InputLayer o : mInputLayer)
-			o.onShowPress(pEvent);
-
-	}
-
-	@Override
-	public boolean onSingleTapUp(final MotionEvent pEvent) {
-		if (mDirtyLayers)
-			updateLayers();
-
-		for (InputLayer o : mInputLayer) {
-			if (o.onSingleTapUp(pEvent)) {
-				if (debugInput)
-					Log.d(TAG, "onSingleTapUp\t" + o.getClass());
-				return true;
-			}
-		}
-		return false;
-	}
+//	@Override
+//	public boolean onSingleTapUp(final MotionEvent pEvent) {
+//		if (mDirtyLayers)
+//			updateLayers();
+//
+//		for (InputLayer o : mInputLayer) {
+//			if (o.onSingleTapUp(pEvent)) {
+//				if (debugInput)
+//					Log.d(TAG, "onSingleTapUp\t" + o.getClass());
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 
 	public void onUpdate(MapPosition mapPosition, boolean changed) {
 		if (mDirtyLayers)

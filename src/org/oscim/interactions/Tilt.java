@@ -23,8 +23,8 @@ import android.view.MotionEvent;
 
 public class Tilt extends Interaction
 {
-	public static final float TILT_THRESHOLD = 1f;
-	public static final int NUM_POINTERS = 3;
+	public static final float TILT_THRESHOLD = 1.0f;
+	public static final int NUM_POINTERS = 2;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
 	private final float tilt_start, tilt_end;
@@ -42,6 +42,11 @@ public class Tilt extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
+		if (buf.finished)
+		{
+			return false;
+		}
+
 		if (buf.className != null && buf.className != Tilt.class)
 		{
 			return false;
@@ -52,66 +57,58 @@ public class Tilt extends Interaction
 			return false;
 		}
 
-		float X[] = new float[3];
-		float Y[] = new float[3];
-
-		X[0] = e.getX(0);
-		X[1] = e.getX(1);
-		X[2] = e.getX(2);
-		Y[0] = e.getY(0);
-		Y[1] = e.getY(1);
-		Y[2] = e.getY(2);
-
-		float mx1 = X[0] - buf.X[0];
-		float my1 = Y[0] - buf.Y[0];
-		float mx2 = X[1] - buf.X[1];
-		float my2 = Y[1] - buf.Y[1];
-		float mx3 = X[2] - buf.X[2];
-		float my3 = Y[2] - buf.Y[2];
-		if (Math.abs(my1) < TILT_THRESHOLD || Math.abs(my2) < TILT_THRESHOLD || Math.abs(my3) < TILT_THRESHOLD)
+		if (Math.abs(buf.curRad - buf.preRad) >= Rotation.ROTATE_THRESHOLD)
 		{
 			return false;
 		}
 
-//		double rad1 = Math.atan2(my1, mx1);
-//		double rad2 = Math.atan2(my2, mx2);
-//		double rad3 = Math.atan2(my3, mx3);
-//		if (Math.abs(rad1 - rad2) > Rotation.ROTATE_THRESHOLD ||
-//			Math.abs(rad1 - rad3) > Rotation.ROTATE_THRESHOLD ||
-//			Math.abs(rad2 - rad3) > Rotation.ROTATE_THRESHOLD)
-//		{
-//			return false;
-//		}
+		if (Math.abs(buf.curDistance - buf.preDistance) >= Zoom.ZOOM_THRESHOLD)
+		{
+			return false;
+		}
 
-//		float dx = X[0] - X[1];
-//		float dy = Y[0] - Y[1];
-//		float slope = 0;
-//		if (dx != 0)
-//		{
-//			slope = dy / dx;
-//		}
-//		if (Math.abs(slope) > 1)
-//		{
-//			return false;
-//		}
+		float my1 = buf.curY[0] - buf.preY[0];
+		float my2 = buf.curY[1] - buf.preY[1];
+		if (Math.abs(my1) < TILT_THRESHOLD || Math.abs(my2) < TILT_THRESHOLD)
+		{
+			return false;
+		}
 
-		buf.X[0] = X[0];
-		buf.X[1] = X[1];
-		buf.X[2] = X[2];
-		buf.Y[0] = Y[0];
-		buf.Y[1] = Y[1];
-		buf.Y[2] = Y[2];
+		float dx = buf.curX[0] - buf.curX[1];
+		float dy = buf.curY[0] - buf.curY[1];
+		float slope = 0;
+		if (dx != 0)
+		{
+			slope = dy / dx;
+		}
+		if (Math.abs(slope) > 1)
+		{
+			return false;
+		}
 
-		buf.tilt = my1 + my2 + my3;
+		buf.tilt = (my1 + my2) / 2;
+
+		if (buf.className == null)
+		{
+			buf.className = Tilt.class;
+		}
 
 		return true;
 	}
 
 	public static void execute(InteractionBuffer buf)
 	{
-		System.out.println("Tilt: " + buf.tilt);
-		buf.mapView.getMapViewPosition().tiltMap(buf.tilt / 15);
+		System.out.println("Tilt");
+//		System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad);
+		buf.mapView.getMapViewPosition().tiltMap(buf.tilt / 5);
 		buf.mapView.redrawMap(true);
+
+		buf.preX[0] = buf.curX[0];
+		buf.preX[1] = buf.curX[1];
+		buf.preY[0] = buf.curY[0];
+		buf.preY[1] = buf.curY[1];
+		buf.preDistance = buf.curDistance;
+		buf.preRad = buf.curRad;
 	}
 
 	@Override

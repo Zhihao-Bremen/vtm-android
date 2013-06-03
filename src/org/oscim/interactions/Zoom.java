@@ -45,6 +45,11 @@ public class Zoom extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
+		if (buf.finished)
+		{
+			return false;
+		}
+
 		if (buf.className != null && buf.className != Zoom.class)
 		{
 			return false;
@@ -55,50 +60,40 @@ public class Zoom extends Interaction
 			return false;
 		}
 
-		float X[] = new float[2];
-		float Y[] = new float[2];
-
-		X[0] = e.getX(0);
-		X[1] = e.getX(1);
-		Y[0] = e.getY(0);
-		Y[1] = e.getY(1);
-
-		double dx = X[0] - X[1];
-		double dy = Y[0] - Y[1];
-
-		double rad = Math.atan2(dy, dx);
-		if (Math.abs(rad - buf.preRad) >= Rotation.ROTATE_THRESHOLD)
+		if (Math.abs(buf.curRad - buf.preRad) >= Rotation.ROTATE_THRESHOLD)
 		{
 			return false;
 		}
 
-		double distance = Math.sqrt(dx * dx + dy * dy);
-		if (Math.abs(distance - buf.preDistance) < ZOOM_THRESHOLD)
+		if (Math.abs(buf.curDistance - buf.preDistance) < ZOOM_THRESHOLD)
 		{
 			return false;
 		}
 
-		buf.X[0] = X[0];
-		buf.X[1] = X[1];
-		buf.Y[0] = Y[0];
-		buf.Y[1] = Y[1];
+		buf.focusX = (buf.curX[0] + buf.curX[1]) / 2 - buf.mapView.getWidth() / 2;
+		buf.focusY = (buf.curY[0] + buf.curY[1]) / 2 - buf.mapView.getHeight() / 2;
 
-		buf.curDistace = distance;
-		buf.curRad = rad;
-		buf.focusX = (buf.X[0] + buf.X[1]) / 2 - buf.mapView.getWidth() / 2;
-		buf.focusY = (buf.Y[0] + buf.Y[1]) / 2 - buf.mapView.getHeight() / 2;
+		if (buf.className == null)
+		{
+			buf.className = Zoom.class;
+		}
 
 		return true;
 	}
 
 	public static void execute(InteractionBuffer buf)
 	{
-		System.out.println("Zoom: Distance: " + buf.curDistace + "|Rad: " + buf.curRad);
-		float scale = (float) (buf.curDistace / buf.preDistance);
+		System.out.println("Zoom");
+		//System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad + "|d1: " + buf.d1 + "|d2: " + buf.d2);
+		float scale = (float) (buf.curDistance / buf.preDistance);
 		buf.mapView.getMapViewPosition().scaleMap(scale, buf.focusX, buf.focusY);
 		buf.mapView.redrawMap(true);
 
-		buf.preDistance = buf.curDistace;
+		buf.preX[0] = buf.curX[0];
+		buf.preX[1] = buf.curX[1];
+		buf.preY[0] = buf.curY[0];
+		buf.preY[1] = buf.curY[1];
+		buf.preDistance = buf.curDistance;
 		buf.preRad = buf.curRad;
 	}
 

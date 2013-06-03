@@ -23,7 +23,7 @@ import android.view.MotionEvent;
 
 public class Rotation extends Interaction
 {
-	public static final double ROTATE_THRESHOLD = 0.02;
+	public static final double ROTATE_THRESHOLD = 0.03;
 	public static final int NUM_POINTERS = 2;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
@@ -41,6 +41,11 @@ public class Rotation extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
+		if (buf.finished)
+		{
+			return false;
+		}
+
 		if (buf.className != null && buf.className != Rotation.class)
 		{
 			return false;
@@ -51,36 +56,40 @@ public class Rotation extends Interaction
 			return false;
 		}
 
-		buf.X[0] = e.getX(0);
-		buf.X[1] = e.getX(1);
-		buf.Y[0] = e.getY(0);
-		buf.Y[1] = e.getY(1);
+//		if (Math.abs(buf.curDistance - buf.preDistance) >= Zoom.ZOOM_THRESHOLD)
+//		{
+//			return false;
+//		}
 
-		double dx = buf.X[0] - buf.X[1];
-		double dy = buf.Y[0] - buf.Y[1];
-
-		double rad = Math.atan2(dy, dx);
-		if (Math.abs(rad - buf.preRad) < Rotation.ROTATE_THRESHOLD)
+		if (Math.abs(buf.curRad - buf.preRad) < ROTATE_THRESHOLD)
 		{
 			return false;
 		}
 
-		buf.curDistace = Math.sqrt(dx * dx + dy * dy);
-		buf.curRad = rad;
-		buf.focusX = buf.mapView.getWidth() / 2 - (buf.X[0] + buf.X[1]) / 2;
-		buf.focusY = buf.mapView.getHeight() / 2 - (buf.Y[0] + buf.Y[1]) / 2;
+		buf.focusX = buf.mapView.getWidth() / 2 - (buf.curX[0] + buf.curX[1]) / 2;
+		buf.focusY = buf.mapView.getHeight() / 2 - (buf.curY[0] + buf.curY[1]) / 2;
+
+		if (buf.className == null)
+		{
+			buf.className = Rotation.class;
+		}
 
 		return true;
 	}
 
 	public static void execute(InteractionBuffer buf)
 	{
-		System.out.println("Rotation: Distance: " + buf.curDistace + "|Rad: " + buf.curRad);
+		System.out.println("Rotation");
+//		System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad);
 		double deltaRad = buf.curRad - buf.preRad;
 		buf.mapView.getMapViewPosition().rotateMap(deltaRad, buf.focusX, buf.focusY);
 		buf.mapView.redrawMap(true);
 
-		buf.preDistance = buf.curDistace;
+		buf.preX[0] = buf.curX[0];
+		buf.preX[1] = buf.curX[1];
+		buf.preY[0] = buf.curY[0];
+		buf.preY[1] = buf.curY[1];
+		buf.preDistance = buf.curDistance;
 		buf.preRad = buf.curRad;
 	}
 
