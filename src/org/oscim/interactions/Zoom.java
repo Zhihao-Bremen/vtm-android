@@ -23,7 +23,8 @@ import android.view.MotionEvent;
 
 public class Zoom extends Interaction
 {
-	public static final double ZOOM_THRESHOLD = 5.0;
+	private static final double ZOOM_THRESHOLD = 5.0;
+
 	public static final int NUM_POINTERS = 2;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
@@ -60,12 +61,19 @@ public class Zoom extends Interaction
 			return false;
 		}
 
-		if (Math.abs(buf.curRad - buf.preRad) >= Rotation.ROTATE_THRESHOLD)
+		if (Math.abs(buf.curDistance - buf.preDistance) < ZOOM_THRESHOLD)
 		{
 			return false;
 		}
 
-		if (Math.abs(buf.curDistance - buf.preDistance) < ZOOM_THRESHOLD)
+		if (buf.parallel)
+		{
+			return false;
+		}
+
+		if ( (Math.abs(buf.cos_1) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD || Math.abs(buf.cos_2) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD) ||
+		     (buf.cos_1 == Double.NaN && Math.abs(buf.cos_2) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD) ||
+		     (buf.cos_2 == Double.NaN && Math.abs(buf.cos_1) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD) )
 		{
 			return false;
 		}
@@ -83,10 +91,9 @@ public class Zoom extends Interaction
 
 	public static void execute(InteractionBuffer buf)
 	{
-		System.out.println("Zoom");
+		//System.out.println("Zoom");
 		//System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad + "|d1: " + buf.d1 + "|d2: " + buf.d2);
-		float scale = (float) (buf.curDistance / buf.preDistance);
-		buf.mapView.getMapViewPosition().scaleMap(scale, buf.focusX, buf.focusY);
+		buf.mapView.getMapViewPosition().scaleMap((float)(buf.curDistance / buf.preDistance), buf.focusX, buf.focusY);
 		buf.mapView.redrawMap(true);
 
 		buf.preX[0] = buf.curX[0];

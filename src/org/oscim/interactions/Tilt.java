@@ -23,7 +23,8 @@ import android.view.MotionEvent;
 
 public class Tilt extends Interaction
 {
-	public static final float TILT_THRESHOLD = 1.0f;
+	private static final float TILT_THRESHOLD = 2.0f;
+
 	public static final int NUM_POINTERS = 2;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
@@ -44,26 +45,19 @@ public class Tilt extends Interaction
 	{
 		if (buf.finished)
 		{
+			//System.out.println("1");
 			return false;
 		}
 
 		if (buf.className != null && buf.className != Tilt.class)
 		{
+			//System.out.println("2");
 			return false;
 		}
 
 		if (e.getPointerCount() != NUM_POINTERS)
 		{
-			return false;
-		}
-
-		if (Math.abs(buf.curRad - buf.preRad) >= Rotation.ROTATE_THRESHOLD)
-		{
-			return false;
-		}
-
-		if (Math.abs(buf.curDistance - buf.preDistance) >= Zoom.ZOOM_THRESHOLD)
-		{
+			//System.out.println("3");
 			return false;
 		}
 
@@ -71,18 +65,19 @@ public class Tilt extends Interaction
 		float my2 = buf.curY[1] - buf.preY[1];
 		if (Math.abs(my1) < TILT_THRESHOLD || Math.abs(my2) < TILT_THRESHOLD)
 		{
+			//System.out.println("4");
 			return false;
 		}
 
-		float dx = buf.curX[0] - buf.curX[1];
-		float dy = buf.curY[0] - buf.curY[1];
-		float slope = 0;
-		if (dx != 0)
+		if (Math.tan(buf.curRad) > 1)
 		{
-			slope = dy / dx;
+			//System.out.println("5");
+			return false;
 		}
-		if (Math.abs(slope) > 1)
+
+		if (!buf.parallel)
 		{
+			//System.out.println("6");
 			return false;
 		}
 
@@ -98,7 +93,7 @@ public class Tilt extends Interaction
 
 	public static void execute(InteractionBuffer buf)
 	{
-		System.out.println("Tilt");
+//		System.out.println("Tilt");
 //		System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad);
 		buf.mapView.getMapViewPosition().tiltMap(buf.tilt / 5);
 		buf.mapView.redrawMap(true);

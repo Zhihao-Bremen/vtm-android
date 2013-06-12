@@ -86,24 +86,24 @@ public class MapEventLayer extends InputLayer {
 
 		if (action == MotionEvent.ACTION_DOWN)
 		{
-			System.out.print("DOWN: ");
-			for (int i = 0; i < e.getPointerCount(); i ++)
-			{
-				System.out.print("|" + e.getX(i) + "," + e.getY(i));
-			}
-			System.out.println("|");
+//			System.out.print("DOWN: ");
+//			for (int i = 0; i < e.getPointerCount(); i ++)
+//			{
+//				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+//			}
+//			System.out.println("|");
 
 			buf = new InteractionBuffer(e, mMapView);
 			return true;
 		}
 		else if (action == MotionEvent.ACTION_MOVE)
 		{
-			System.out.print("MOVE: ");
-			for (int i = 0; i < e.getPointerCount(); i ++)
-			{
-				System.out.print("|" + e.getX(i) + "," + e.getY(i));
-			}
-			System.out.println("|");
+//			System.out.print("MOVE: ");
+//			for (int i = 0; i < e.getPointerCount(); i ++)
+//			{
+//				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+//			}
+//			System.out.println("|");
 
 			buf.update(e);
 
@@ -149,14 +149,14 @@ public class MapEventLayer extends InputLayer {
 		}
 		else if (action == MotionEvent.ACTION_UP)
 		{
-			System.out.print("UP: ");
-			for (int i = 0; i < e.getPointerCount(); i ++)
-			{
-				System.out.print("|" + e.getX(i) + "," + e.getY(i));
-			}
-			System.out.println("|");
+//			System.out.print("UP: ");
+//			for (int i = 0; i < e.getPointerCount(); i ++)
+//			{
+//				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+//			}
+//			System.out.println("|");
 
-			buf.updateEnd(e);
+			buf.updateMulti(e, -1);
 
 			if (Move.class.equals(buf.className))
 			{
@@ -177,16 +177,33 @@ public class MapEventLayer extends InputLayer {
 
 			return true;
 		}
-		else if (action == MotionEvent.ACTION_POINTER_DOWN || action == MotionEvent.ACTION_POINTER_UP)
+		else if (action == MotionEvent.ACTION_POINTER_DOWN)
 		{
-			System.out.print("POINTER: ");
-			for (int i = 0; i < e.getPointerCount(); i ++)
-			{
-				System.out.print("|" + e.getX(i) + "," + e.getY(i));
-			}
-			System.out.println("|");
+//			System.out.print("POINTER DOWN: ");
+//			for (int i = 0; i < e.getPointerCount(); i ++)
+//			{
+//				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+//			}
+//			System.out.println("|");
 
-			buf.updateMulti(e);
+			buf.updateMulti(e, 1);
+
+			return true;
+		}
+		if (action == MotionEvent.ACTION_POINTER_UP)
+		{
+//			System.out.print("POINTER UP: ");
+//			for (int i = 0; i < e.getPointerCount(); i ++)
+//			{
+//				if (i == e.getActionIndex())
+//				{
+//					continue;
+//				}
+//				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+//			}
+//			System.out.println("|");
+
+			buf.updateMulti(e, -1);
 
 			return true;
 		}

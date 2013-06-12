@@ -25,7 +25,8 @@ import android.view.MotionEvent;
 
 public class Move extends Interaction
 {
-	public static final double ROTATE_THRESHOLD = 5.0;
+	private static final double MOVE_THRESHOLD = 10.0 * 10.0;
+
 	public static final int NUM_POINTERS = 1;
 	private final long time_start, time_end;
 	private final ArrayList<PointF> pointer_track;
@@ -66,7 +67,7 @@ public class Move extends Interaction
 		buf.focusX = buf.curX[0] - buf.preX[0];
 		buf.focusY = buf.curY[0] - buf.preY[0];
 
-		if (buf.focusX * buf.focusX + buf.focusY * buf.focusY < ROTATE_THRESHOLD * ROTATE_THRESHOLD)
+		if (buf.focusX * buf.focusX + buf.focusY * buf.focusY < MOVE_THRESHOLD)
 		{
 			return false;
 		}
@@ -81,7 +82,7 @@ public class Move extends Interaction
 
 	public static void execute(InteractionBuffer buf)
 	{
-		System.out.println("Scale");
+//		System.out.println("Scale");
 //		System.out.println(buf.preX[0] + "|" + buf.preY[0]);
 //		System.out.println(buf.curX[0] + "|" + buf.curY[0]);
 //		System.out.println("disX: " + buf.focusX + "|disY: " + buf.focusY);
@@ -90,8 +91,8 @@ public class Move extends Interaction
 
 		buf.preX[0] = buf.curX[0];
 		buf.preY[0] = buf.curY[0];
-		buf.preDistance = buf.curDistance;
-		buf.preRad = buf.curRad;
+//		buf.preDistance = buf.curDistance;
+//		buf.preRad = buf.curRad;
 	}
 
 	@Override

@@ -23,7 +23,8 @@ import android.view.MotionEvent;
 
 public class Rotation extends Interaction
 {
-	public static final double ROTATE_THRESHOLD = 0.03;
+	private static final double ROTATE_THRESHOLD = Math.PI / 36.0; //5 degree
+
 	public static final int NUM_POINTERS = 2;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
@@ -43,26 +44,47 @@ public class Rotation extends Interaction
 	{
 		if (buf.finished)
 		{
+			//System.out.println("1");
 			return false;
 		}
 
 		if (buf.className != null && buf.className != Rotation.class)
 		{
+			//System.out.println("2");
 			return false;
 		}
 
 		if (e.getPointerCount() != NUM_POINTERS)
 		{
+			//System.out.println("3");
 			return false;
 		}
 
-//		if (Math.abs(buf.curDistance - buf.preDistance) >= Zoom.ZOOM_THRESHOLD)
-//		{
-//			return false;
-//		}
-
 		if (Math.abs(buf.curRad - buf.preRad) < ROTATE_THRESHOLD)
 		{
+			//System.out.println("4");
+			return false;
+		}
+
+		if (buf.parallel)
+		{
+			//System.out.println("5");
+			return false;
+		}
+
+		double D_0 = buf.A * buf.curX[0] + buf.B * buf.curY[0] + buf.C;
+		double D_1 = buf.A * buf.curX[1] + buf.B * buf.curY[1] + buf.C;
+		if (D_0 * D_1 > 0.0)
+		{
+			//System.out.println("6");
+			return false;
+		}
+
+		if ( (Math.abs(buf.cos_1) >= InteractionBuffer.ZOOM_ROTATION_THRESHOLD && Math.abs(buf.cos_2) >= InteractionBuffer.ZOOM_ROTATION_THRESHOLD) ||
+			 (buf.cos_1 == Double.NaN && Math.abs(buf.cos_2) >= InteractionBuffer.ZOOM_ROTATION_THRESHOLD) ||
+		     (buf.cos_2 == Double.NaN && Math.abs(buf.cos_1) >= InteractionBuffer.ZOOM_ROTATION_THRESHOLD) )
+		{
+			//System.out.println("7");
 			return false;
 		}
 
@@ -79,10 +101,9 @@ public class Rotation extends Interaction
 
 	public static void execute(InteractionBuffer buf)
 	{
-		System.out.println("Rotation");
+//		System.out.println("Rotation");
 //		System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad);
-		double deltaRad = buf.curRad - buf.preRad;
-		buf.mapView.getMapViewPosition().rotateMap(deltaRad, buf.focusX, buf.focusY);
+		buf.mapView.getMapViewPosition().rotateMap(buf.curRad - buf.preRad, buf.focusX, buf.focusY);
 		buf.mapView.redrawMap(true);
 
 		buf.preX[0] = buf.curX[0];
