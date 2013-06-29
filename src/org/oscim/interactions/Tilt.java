@@ -43,67 +43,55 @@ public class Tilt extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (buf.finished)
-		{
-			//System.out.println("1");
-			return false;
-		}
-
-		if (buf.className != null && buf.className != Tilt.class)
-		{
-			//System.out.println("2");
-			return false;
-		}
-
 		if (e.getPointerCount() != NUM_POINTERS)
 		{
-			//System.out.println("3");
 			return false;
 		}
-
-		float my1 = buf.curY[0] - buf.preY[0];
-		float my2 = buf.curY[1] - buf.preY[1];
-		if (Math.abs(my1) < TILT_THRESHOLD || Math.abs(my2) < TILT_THRESHOLD)
+		else if (buf.className == null)
 		{
-			//System.out.println("4");
-			return false;
-		}
+			if (!buf.parallel)
+			{
+				return false;
+			}
 
-		if (Math.tan(buf.curRad) > 1)
-		{
-			//System.out.println("5");
-			return false;
-		}
+			if (Math.tan(buf.curRad) > 1)
+			{
+				return false;
+			}
 
-		if (!buf.parallel)
-		{
-			//System.out.println("6");
-			return false;
-		}
-
-		buf.tilt = (my1 + my2) / 2;
-
-		if (buf.className == null)
-		{
 			buf.className = Tilt.class;
+			return true;
 		}
-
-		return true;
+		else if (buf.className == Tilt.class)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	public static void execute(InteractionBuffer buf)
 	{
 //		System.out.println("Tilt");
 //		System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad);
-		buf.mapView.getMapViewPosition().tiltMap(buf.tilt / 5);
-		buf.mapView.redrawMap(true);
 
-		buf.preX[0] = buf.curX[0];
-		buf.preX[1] = buf.curX[1];
-		buf.preY[0] = buf.curY[0];
-		buf.preY[1] = buf.curY[1];
-		buf.preDistance = buf.curDistance;
-		buf.preRad = buf.curRad;
+		float my1 = buf.curY[0] - buf.preY[0];
+		float my2 = buf.curY[1] - buf.preY[1];
+		if (Math.abs(my1) >= TILT_THRESHOLD && Math.abs(my2) >= TILT_THRESHOLD)
+		{
+			float tilt = (my1 + my2) / 2;
+			buf.mapView.getMapViewPosition().tiltMap(tilt / 5);
+			buf.mapView.redrawMap(true);
+
+			buf.preX[0] = buf.curX[0];
+			buf.preX[1] = buf.curX[1];
+			buf.preY[0] = buf.curY[0];
+			buf.preY[1] = buf.curY[1];
+			buf.preDistance = buf.curDistance;
+			buf.preRad = buf.curRad;
+		}
 	}
 
 	@Override

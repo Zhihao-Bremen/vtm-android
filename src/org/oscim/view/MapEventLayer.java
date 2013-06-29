@@ -94,6 +94,7 @@ public class MapEventLayer extends InputLayer {
 //			System.out.println("|");
 
 			buf = new InteractionBuffer(e, mMapView);
+
 			return true;
 		}
 		else if (action == MotionEvent.ACTION_MOVE)
@@ -124,17 +125,6 @@ public class MapEventLayer extends InputLayer {
 				Tilt.execute(buf);
 			}
 
-//			if (buf.className == null)
-//			{
-//				buf.className = type;
-//			}
-//			else if (!buf.className.equals(type))
-//			{
-//				updateInteractionManager();
-//				buf.clean();
-//				buf.className = type;
-//			}
-
 //			try
 //			{
 //				Method method = type.getMethod("execute", InteractionBuffer.class);
@@ -156,24 +146,8 @@ public class MapEventLayer extends InputLayer {
 //			}
 //			System.out.println("|");
 
-			buf.updateMulti(e, -1);
-
-			if (Move.class.equals(buf.className))
-			{
-				mInteractionManager.save(new Move(buf));
-			}
-			else if (Zoom.class.equals(buf.className))
-			{
-				mInteractionManager.save(new Zoom(buf));
-			}
-			else if (Rotation.class.equals(buf.className))
-			{
-				mInteractionManager.save(new Rotation(buf));
-			}
-			else if (Tilt.class.equals(buf.className))
-			{
-				mInteractionManager.save(new Tilt(buf));
-			}
+			buf.updateEnd(e);
+			saveInteraction();
 
 			return true;
 		}
@@ -185,6 +159,9 @@ public class MapEventLayer extends InputLayer {
 //				System.out.print("|" + e.getX(i) + "," + e.getY(i));
 //			}
 //			System.out.println("|");
+
+			buf.updateEnd(e);
+			saveInteraction();
 
 			buf.updateMulti(e, 1);
 
@@ -202,6 +179,9 @@ public class MapEventLayer extends InputLayer {
 //				System.out.print("|" + e.getX(i) + "," + e.getY(i));
 //			}
 //			System.out.println("|");
+
+			buf.updateEnd(e);
+			saveInteraction();
 
 			buf.updateMulti(e, -1);
 
@@ -235,6 +215,26 @@ public class MapEventLayer extends InputLayer {
 //		}
 
 		return false;
+	}
+
+	private void saveInteraction()
+	{
+		if (Move.class.equals(buf.className))
+		{
+			mInteractionManager.save(new Move(buf));
+		}
+		else if (Zoom.class.equals(buf.className))
+		{
+			mInteractionManager.save(new Zoom(buf));
+		}
+		else if (Rotation.class.equals(buf.className))
+		{
+			mInteractionManager.save(new Rotation(buf));
+		}
+		else if (Tilt.class.equals(buf.className))
+		{
+			mInteractionManager.save(new Tilt(buf));
+		}
 	}
 
 	private static int getAction(MotionEvent e) {
@@ -429,10 +429,10 @@ public class MapEventLayer extends InputLayer {
 		//} else {
 		float s = (200 / MapView.dpi);
 
-//		mMapPosition.animateFling(
-//				Math.round(velocityX * s),
-//				Math.round(velocityY * s),
-//				-w, w, -h, h);
+		mMapPosition.animateFling(
+				Math.round(velocityX * s),
+				Math.round(velocityY * s),
+				-w, w, -h, h);
 		return true;
 	}
 

@@ -46,62 +46,57 @@ public class Zoom extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (buf.finished)
-		{
-			return false;
-		}
-
-		if (buf.className != null && buf.className != Zoom.class)
-		{
-			return false;
-		}
-
 		if (e.getPointerCount() != NUM_POINTERS)
 		{
 			return false;
 		}
-
-		if (Math.abs(buf.curDistance - buf.preDistance) < ZOOM_THRESHOLD)
+		else if (buf.className == null)
 		{
-			return false;
-		}
+			if (buf.parallel)
+			{
+				return false;
+			}
 
-		if (buf.parallel)
-		{
-			return false;
-		}
+			if (buf.same_side <= 0.0)
+			{
+				if (Math.abs(buf.cos_1) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD ||
+				    Math.abs(buf.cos_2) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD )
+				{
+					return false;
+				}
+			}
 
-		if ( (Math.abs(buf.cos_1) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD || Math.abs(buf.cos_2) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD) ||
-		     (buf.cos_1 == Double.NaN && Math.abs(buf.cos_2) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD) ||
-		     (buf.cos_2 == Double.NaN && Math.abs(buf.cos_1) < InteractionBuffer.ZOOM_ROTATION_THRESHOLD) )
-		{
-			return false;
-		}
-
-		buf.focusX = (buf.curX[0] + buf.curX[1]) / 2 - buf.mapView.getWidth() / 2;
-		buf.focusY = (buf.curY[0] + buf.curY[1]) / 2 - buf.mapView.getHeight() / 2;
-
-		if (buf.className == null)
-		{
 			buf.className = Zoom.class;
+			return true;
 		}
-
-		return true;
+		else if (buf.className == Zoom.class)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	public static void execute(InteractionBuffer buf)
 	{
 		//System.out.println("Zoom");
 		//System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad + "|d1: " + buf.d1 + "|d2: " + buf.d2);
-		buf.mapView.getMapViewPosition().scaleMap((float)(buf.curDistance / buf.preDistance), buf.focusX, buf.focusY);
-		buf.mapView.redrawMap(true);
+		if (Math.abs(buf.curDistance - buf.preDistance) >= ZOOM_THRESHOLD)
+		{
+			float x = (buf.curX[0] + buf.curX[1]) / 2 - buf.mapView.getWidth() / 2;
+			float y = (buf.curY[0] + buf.curY[1]) / 2 - buf.mapView.getHeight() / 2;
+			buf.mapView.getMapViewPosition().scaleMap((float)(buf.curDistance / buf.preDistance), x, y);
+			buf.mapView.redrawMap(true);
 
-		buf.preX[0] = buf.curX[0];
-		buf.preX[1] = buf.curX[1];
-		buf.preY[0] = buf.curY[0];
-		buf.preY[1] = buf.curY[1];
-		buf.preDistance = buf.curDistance;
-		buf.preRad = buf.curRad;
+			buf.preX[0] = buf.curX[0];
+			buf.preX[1] = buf.curX[1];
+			buf.preY[0] = buf.curY[0];
+			buf.preY[1] = buf.curY[1];
+			buf.preDistance = buf.curDistance;
+			buf.preRad = buf.curRad;
+		}
 	}
 
 	@Override

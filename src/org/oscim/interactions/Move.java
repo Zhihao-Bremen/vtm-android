@@ -25,7 +25,7 @@ import android.view.MotionEvent;
 
 public class Move extends Interaction
 {
-	private static final double MOVE_THRESHOLD = 10.0 * 10.0;
+	private static final double MOVE_THRESHOLD = 10.0;
 
 	public static final int NUM_POINTERS = 1;
 	private final long time_start, time_end;
@@ -49,35 +49,23 @@ public class Move extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (buf.finished)
-		{
-			return false;
-		}
-
-		if (buf.className != null && buf.className != Move.class)
-		{
-			return false;
-		}
-
 		if (e.getPointerCount() != NUM_POINTERS)
 		{
 			return false;
 		}
-
-		buf.focusX = buf.curX[0] - buf.preX[0];
-		buf.focusY = buf.curY[0] - buf.preY[0];
-
-		if (buf.focusX * buf.focusX + buf.focusY * buf.focusY < MOVE_THRESHOLD)
+		else if (buf.className == null)
+		{
+			buf.className = Move.class;
+			return true;
+		}
+		else if (buf.className == Move.class)
+		{
+			return true;
+		}
+		else
 		{
 			return false;
 		}
-
-		if (buf.className == null)
-		{
-			buf.className = Move.class;
-		}
-
-		return true;
 	}
 
 	public static void execute(InteractionBuffer buf)
@@ -86,13 +74,29 @@ public class Move extends Interaction
 //		System.out.println(buf.preX[0] + "|" + buf.preY[0]);
 //		System.out.println(buf.curX[0] + "|" + buf.curY[0]);
 //		System.out.println("disX: " + buf.focusX + "|disY: " + buf.focusY);
-		buf.mapView.getMapViewPosition().moveMap(buf.focusX, buf.focusY);
-		buf.mapView.redrawMap(true);
 
-		buf.preX[0] = buf.curX[0];
-		buf.preY[0] = buf.curY[0];
-//		buf.preDistance = buf.curDistance;
-//		buf.preRad = buf.curRad;
+		float deltaX = buf.curX[0] - buf.preX[0];
+		float deltaY = buf.curY[0] - buf.preY[0];
+		double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+		if (distance >= MOVE_THRESHOLD)
+		{
+//			if (Math.sqrt(buf.velocityX * buf.velocityX + buf.velocityY * buf.velocityY) >= 1.0)
+//			{
+//				int w = Tile.SIZE * 3;
+//				int h = Tile.SIZE * 3;
+//				buf.mapView.getMapViewPosition().animateFling(Math.round(buf.velocityX), Math.round(buf.velocityY), -w, w, -h, h);
+//			}
+//			else
+//			{
+				buf.mapView.getMapViewPosition().moveMap(deltaX, deltaY);
+//			}
+			buf.mapView.redrawMap(true);
+
+			buf.preX[0] = buf.curX[0];
+			buf.preY[0] = buf.curY[0];
+//			buf.preDistance = buf.curDistance;
+//			buf.preRad = buf.curRad;
+		}
 	}
 
 	@Override
