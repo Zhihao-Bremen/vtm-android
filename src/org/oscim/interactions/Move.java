@@ -20,6 +20,8 @@ import org.jdom2.Element;
 import org.oscim.core.GeoPoint;
 import org.oscim.core.PointD;
 import org.oscim.core.PointF;
+import org.oscim.core.Tile;
+import org.oscim.view.MapView;
 
 import android.view.MotionEvent;
 
@@ -28,6 +30,9 @@ public class Move extends Interaction
 	private static final double MOVE_THRESHOLD = 10.0;
 
 	public static final int NUM_POINTERS = 1;
+	private static final int w = Tile.SIZE * 3;
+	private static final int h = Tile.SIZE * 3;
+	private static final float s = (200 / MapView.dpi);
 	private final long time_start, time_end;
 	private final ArrayList<PointF> pointer_track;
 	private final PointD center_start, center_end;
@@ -80,16 +85,17 @@ public class Move extends Interaction
 		double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 		if (distance >= MOVE_THRESHOLD)
 		{
-//			if (Math.sqrt(buf.velocityX * buf.velocityX + buf.velocityY * buf.velocityY) >= 1.0)
-//			{
-//				int w = Tile.SIZE * 3;
-//				int h = Tile.SIZE * 3;
-//				buf.mapView.getMapViewPosition().animateFling(Math.round(buf.velocityX), Math.round(buf.velocityY), -w, w, -h, h);
-//			}
-//			else
-//			{
+			if (Math.sqrt(buf.velocityX * buf.velocityX + buf.velocityY * buf.velocityY) >= 250.0)
+			{
+				System.out.println("OnFling");
+				buf.mapView.getMapViewPosition().animateFling(Math.round(buf.velocityX * s),
+				                                              Math.round(buf.velocityY * s),
+				                                              -w, w, -h, h);
+			}
+			else
+			{
 				buf.mapView.getMapViewPosition().moveMap(deltaX, deltaY);
-//			}
+			}
 			buf.mapView.redrawMap(true);
 
 			buf.preX[0] = buf.curX[0];

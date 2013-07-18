@@ -1,5 +1,5 @@
 /*
- * Copyright 2010, 2011, 2012 mapsforge.org
+ * Copyright 2013
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU Lesser General Public License as published by the Free Software
@@ -21,22 +21,29 @@ import org.oscim.core.PointF;
 
 import android.view.MotionEvent;
 
-public class Rotation extends Interaction
+public class Zoom_Rotation extends Interaction
 {
+	private static final double ZOOM_THRESHOLD = 5.0;
 	private static final double ROTATE_THRESHOLD = Math.PI / 36.0; //5 degree
 
 	public static final int NUM_POINTERS = 2;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
+	private final int zoomLevel_start, zoomLevel_end;
+	private final double scale_start, scale_end;
 	private final float angle_start, angle_end;
 
-	public Rotation(InteractionBuffer buf)
+	public Zoom_Rotation(InteractionBuffer buf)
 	{
 		assert buf.getPointerNum() == NUM_POINTERS;
 
 		this.time_start = buf.getTime_start();
 		this.time_end = buf.getTime_end();
 		this.pointer_track = buf.getTrack();
+		this.zoomLevel_start = buf.getMapPosition_start().zoomLevel;
+		this.zoomLevel_end = buf.getMapPosition_end().zoomLevel;
+		this.scale_start = buf.getMapPosition_start().scale;
+		this.scale_end = buf.getMapPosition_end().scale;
 		this.angle_start = buf.getMapPosition_start().angle;
 		this.angle_end = buf.getMapPosition_end().angle;
 	}
@@ -54,31 +61,10 @@ public class Rotation extends Interaction
 				return false;
 			}
 
-			if (buf.same_side > 0.0)
-			{
-				return false;
-			}
-			else if (buf.same_side == 0.0)
-			{
-				if (Math.abs(buf.cos_1) >= InteractionBuffer.ZOOM_ROTATION_THRESHOLD ||
-				    Math.abs(buf.cos_2) >= InteractionBuffer.ZOOM_ROTATION_THRESHOLD)
-				{
-					return false;
-				}
-			}
-			else
-			{
-				if (Math.abs(buf.cos_1) >= InteractionBuffer.ZOOM_ROTATION_THRESHOLD &&
-				    Math.abs(buf.cos_2) >= InteractionBuffer.ZOOM_ROTATION_THRESHOLD)
-				{
-					return false;
-				}
-			}
-
-			buf.className = Rotation.class;
+			buf.className = Zoom.class;
 			return true;
 		}
-		else if (buf.className == Rotation.class)
+		else if (buf.className == Zoom.class)
 		{
 			return true;
 		}
@@ -90,15 +76,30 @@ public class Rotation extends Interaction
 
 	public static void execute(InteractionBuffer buf)
 	{
+		boolean done = false;
+		//System.out.println("Zoom_Rotation");
+		//System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad + "|d1: " + buf.d1 + "|d2: " + buf.d2);
+		if (Math.abs(buf.curDistance - buf.preDistance) >= ZOOM_THRESHOLD)
+		{
+			float x = (buf.curX[0] + buf.curX[1]) / 2 - buf.mapView.getWidth() / 2;
+			float y = (buf.curY[0] + buf.curY[1]) / 2 - buf.mapView.getHeight() / 2;
+			buf.mapView.getMapViewPosition().scaleMap((float)(buf.curDistance / buf.preDistance), x, y);
+			buf.mapView.redrawMap(true);
+
+			done = true;
+		}
 		if (Math.abs(buf.curRad - buf.preRad) >= ROTATE_THRESHOLD)
 		{
-//			System.out.println("Rotation");
-//			System.out.println("Distance: " + buf.curDistance + "|Rad: " + buf.curRad);
 			float x = buf.mapView.getWidth() / 2 - (buf.curX[0] + buf.curX[1]) / 2;
 			float y = buf.mapView.getHeight() / 2 - (buf.curY[0] + buf.curY[1]) / 2;
 			buf.mapView.getMapViewPosition().rotateMap(buf.curRad - buf.preRad, x, y);
 			buf.mapView.redrawMap(true);
 
+			done = true;
+		}
+
+		if (done)
+		{
 			buf.preX[0] = buf.curX[0];
 			buf.preX[1] = buf.curX[1];
 			buf.preY[0] = buf.curY[0];
@@ -113,10 +114,10 @@ public class Rotation extends Interaction
 	{
 		StringBuilder s = new StringBuilder();
 		Element interaction = new Element("Interaction");
-		Element pointer, rotation;
+		Element pointer, zoomLevel, scale, rotation;
 		ArrayList<PointF> track;
 
-		interaction.setAttribute("type", "Rotation");
+		interaction.setAttribute("type", "Zoom_Rotation");
 		interaction.setAttribute("start", String.valueOf(this.time_start));
 		interaction.setAttribute("end", String.valueOf(this.time_end));
 
@@ -134,6 +135,18 @@ public class Rotation extends Interaction
 			pointer.setText(s.toString());
 			interaction.addContent(pointer);
 		}
+
+		zoomLevel = new Element("ZoomLevel");
+		s.delete(0, s.length());
+		s.append(this.zoomLevel_start).append(",").append(this.zoomLevel_end);
+		zoomLevel.setText(s.toString());
+		interaction.addContent(zoomLevel);
+
+		scale = new Element("Scale");
+		s.delete(0, s.length());
+		s.append(this.scale_start).append(",").append(this.scale_end);
+		scale.setText(s.toString());
+		interaction.addContent(scale);
 
 		rotation = new Element("Rotation");
 		s.delete(0, s.length());
@@ -157,6 +170,26 @@ public class Rotation extends Interaction
 	public ArrayList<PointF>[] getTrack()
 	{
 		return this.pointer_track;
+	}
+
+	public double getZoomLevel_start()
+	{
+		return this.zoomLevel_start;
+	}
+
+	public double getZoomLevel_end()
+	{
+		return this.zoomLevel_end;
+	}
+
+	public double getScale_start()
+	{
+		return this.scale_start;
+	}
+
+	public double getScale_end()
+	{
+		return this.scale_end;
 	}
 
 	public float getRotation_start()

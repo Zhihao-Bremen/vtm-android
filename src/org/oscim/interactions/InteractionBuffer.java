@@ -38,7 +38,8 @@ public final class InteractionBuffer
 	public boolean parallel;
 	public int zoom_rotation; //1: zoom; -1: rotation; 0: otherwise.
 	public float preX[], curX[], preY[], curY[], velocityX, velocityY;
-	public double preDistance, curDistance, preRad, curRad,
+	public double preDistance, curDistance,
+	              preRad, curRad,
 	              A, B, C, same_side,
 	              basisX, basisY, basisL,
 	              vectorX_1, vectorY_1, cos_1, vectorL_1,
@@ -76,7 +77,12 @@ public final class InteractionBuffer
 //			System.out.println(this.preX[i] + "," + this.preY[i]);
 //		}
 
-		if (this.num_pointers == 2)
+		if (this.num_pointers == 1)
+		{
+			this.velocityX = 0.0f;
+			this.velocityY = 0.0f;
+		}
+		else if (this.num_pointers == 2)
 		{
 			this.basisX = preX[0] - preX[1];
 			this.basisY = preY[0] - preY[1];
@@ -98,6 +104,7 @@ public final class InteractionBuffer
 //			System.out.println("basic vector: " + this.basisX + ", " + this.basisY);
 //			System.out.println("basic length: " + this.basisL);
 		}
+
 		this.time_start = System.currentTimeMillis() - SystemClock.uptimeMillis() + e.getEventTime();
 		//this.time_end = -1;
 		this.mapView = mapView;
@@ -135,8 +142,11 @@ public final class InteractionBuffer
 //		}
 		if (this.num_pointers == 1)
 		{
-			this.velocityX = (this.curX[0] - this.pointer_track[0].get(0).x) / (e.getEventTime() - e.getDownTime()) * 1000;
-			this.velocityY = (this.curY[0] - this.pointer_track[0].get(0).y) / (e.getEventTime() - e.getDownTime()) * 1000;
+			this.velocityX = (this.curX[0] - this.pointer_track[0].get(0).x) / (e.getEventTime() - e.getDownTime()) * 1000.0f;
+			this.velocityY = (this.curY[0] - this.pointer_track[0].get(0).y) / (e.getEventTime() - e.getDownTime()) * 1000.0f;
+
+			System.out.println("velocityX: " + velocityX);
+			System.out.println("velocityY: " + velocityY);
 		}
 		else if (this.num_pointers == 2)
 		{

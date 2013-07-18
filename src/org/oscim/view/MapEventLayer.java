@@ -18,9 +18,8 @@ import org.oscim.core.Tile;
 import org.oscim.interactions.InteractionBuffer;
 import org.oscim.interactions.InteractionManager;
 import org.oscim.interactions.Move;
-import org.oscim.interactions.Rotation;
 import org.oscim.interactions.Tilt;
-import org.oscim.interactions.Zoom;
+import org.oscim.interactions.Zoom_Rotation;
 import org.oscim.layers.InputLayer;
 
 import android.util.Log;
@@ -80,18 +79,17 @@ public class MapEventLayer extends InputLayer {
 	@Override
 	public boolean onTouchEvent(MotionEvent e) {
 
-		//System.out.println("onTouchEvent in MapEventLayer");
-
 		int action = getAction(e);
 
 		if (action == MotionEvent.ACTION_DOWN)
 		{
-//			System.out.print("DOWN: ");
-//			for (int i = 0; i < e.getPointerCount(); i ++)
-//			{
-//				System.out.print("|" + e.getX(i) + "," + e.getY(i));
-//			}
-//			System.out.println("|");
+			System.out.print("DOWN: ");
+			for (int i = 0; i < e.getPointerCount(); i ++)
+			{
+				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+			}
+			System.out.println("|");
+			System.out.println(e.getEventTime());
 
 			buf = new InteractionBuffer(e, mMapView);
 
@@ -99,12 +97,13 @@ public class MapEventLayer extends InputLayer {
 		}
 		else if (action == MotionEvent.ACTION_MOVE)
 		{
-//			System.out.print("MOVE: ");
-//			for (int i = 0; i < e.getPointerCount(); i ++)
-//			{
-//				System.out.print("|" + e.getX(i) + "," + e.getY(i));
-//			}
-//			System.out.println("|");
+			System.out.print("MOVE: ");
+			for (int i = 0; i < e.getPointerCount(); i ++)
+			{
+				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+			}
+			System.out.println("|");
+			System.out.println(e.getEventTime());
 
 			buf.update(e);
 
@@ -112,13 +111,17 @@ public class MapEventLayer extends InputLayer {
 			{
 				Move.execute(buf);
 			}
-			else if (Rotation.recognize(e, buf))
+//			else if (Rotation.recognize(e, buf))
+//			{
+//				Rotation.execute(buf);
+//			}
+//			else if (Zoom.recognize(e, buf))
+//			{
+//				Zoom.execute(buf);
+//			}
+			else if (Zoom_Rotation.recognize(e, buf))
 			{
-				Rotation.execute(buf);
-			}
-			else if (Zoom.recognize(e, buf))
-			{
-				Zoom.execute(buf);
+				Zoom_Rotation.execute(buf);
 			}
 			else if (Tilt.recognize(e, buf))
 			{
@@ -139,12 +142,13 @@ public class MapEventLayer extends InputLayer {
 		}
 		else if (action == MotionEvent.ACTION_UP)
 		{
-//			System.out.print("UP: ");
-//			for (int i = 0; i < e.getPointerCount(); i ++)
-//			{
-//				System.out.print("|" + e.getX(i) + "," + e.getY(i));
-//			}
-//			System.out.println("|");
+			System.out.print("UP: ");
+			for (int i = 0; i < e.getPointerCount(); i ++)
+			{
+				System.out.print("|" + e.getX(i) + "," + e.getY(i));
+			}
+			System.out.println("|");
+			System.out.println(e.getEventTime());
 
 			buf.updateEnd(e);
 			saveInteraction();
@@ -223,13 +227,17 @@ public class MapEventLayer extends InputLayer {
 		{
 			mInteractionManager.save(new Move(buf));
 		}
-		else if (Zoom.class.equals(buf.className))
+//		else if (Zoom.class.equals(buf.className))
+//		{
+//			mInteractionManager.save(new Zoom(buf));
+//		}
+//		else if (Rotation.class.equals(buf.className))
+//		{
+//			mInteractionManager.save(new Rotation(buf));
+//		}
+		else if (Zoom_Rotation.class.equals(buf.className))
 		{
-			mInteractionManager.save(new Zoom(buf));
-		}
-		else if (Rotation.class.equals(buf.className))
-		{
-			mInteractionManager.save(new Rotation(buf));
+			mInteractionManager.save(new Zoom_Rotation(buf));
 		}
 		else if (Tilt.class.equals(buf.className))
 		{
