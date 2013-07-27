@@ -23,10 +23,11 @@ import android.view.MotionEvent;
 
 public class Zoom_Rotation extends Interaction
 {
+	public static final int NUM_POINTERS = 2;
 	private static final double ZOOM_THRESHOLD = 5.0;
 	private static final double ROTATE_THRESHOLD = Math.PI / 36.0; //5 degree
 
-	public static final int NUM_POINTERS = 2;
+	public static boolean enabled = true;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
 	private final int zoomLevel_start, zoomLevel_end;
@@ -50,21 +51,27 @@ public class Zoom_Rotation extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (e.getPointerCount() != NUM_POINTERS)
+		if (!Zoom_Rotation.enabled)
 		{
 			return false;
 		}
-		else if (buf.className == null)
+
+		if (e.getPointerCount() != Zoom_Rotation.NUM_POINTERS)
+		{
+			return false;
+		}
+
+		if (buf.className == null)
 		{
 			if (buf.parallel)
 			{
 				return false;
 			}
 
-			buf.className = Zoom.class;
+			buf.className = Zoom_Rotation.class;
 			return true;
 		}
-		else if (buf.className == Zoom.class)
+		else if (buf.className == Zoom_Rotation.class)
 		{
 			return true;
 		}

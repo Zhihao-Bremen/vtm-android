@@ -37,6 +37,7 @@ public final class InteractionBuffer
 	public Class<? extends Interaction> className;
 	public boolean parallel;
 	public int zoom_rotation; //1: zoom; -1: rotation; 0: otherwise.
+	public int auto_zoom; //-1: auto_zoom_out; 0: invalid_auto_zoom; 1: auto_zoom_in.
 	public float preX[], curX[], preY[], curY[], velocityX, velocityY;
 	public double preDistance, curDistance,
 	              preRad, curRad,

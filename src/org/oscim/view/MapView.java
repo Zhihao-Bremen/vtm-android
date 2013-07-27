@@ -30,6 +30,7 @@ import org.oscim.layers.tile.MapTileLayer;
 import org.oscim.layers.tile.MapTileLoader;
 import org.oscim.overlay.BuildingOverlay;
 import org.oscim.overlay.LabelingOverlay;
+import org.oscim.overlay.MyOverlay;
 import org.oscim.overlay.Overlay;
 import org.oscim.renderer.GLView;
 
@@ -166,6 +167,15 @@ public class MapView extends RelativeLayout {
 
 		mLayerManager.add(1, baseLayer);
 
+		MyOverlay temp = new MyOverlay(this);
+		temp.setEnabled(true);
+//		System.out.println("MyOverlay: " + temp.isEnabled());
+//		System.out.println("AutoZoom: " + AutoZoom.enabled);
+//		System.out.println("Move: " + Move.enabled);
+//		System.out.println("Zoom_Rotation: " + Zoom_Rotation.enabled);
+//		System.out.println("Tilt: " + Tilt.enabled);
+		mLayerManager.add(2, temp);
+
 		mRotationEnabled = true;
 
 		//mLayerManager.add(new GenericOverlay(this, new GridOverlay(this)));
@@ -221,9 +231,6 @@ public class MapView extends RelativeLayout {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent motionEvent) {
-
-		//System.out.println("onTouchEvent in MapView");
-
 		if (!isClickable())
 			return false;
 

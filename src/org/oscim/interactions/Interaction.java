@@ -26,29 +26,21 @@ public abstract class Interaction
 //	private MapPosition position_start, position_end;
 
 	/**
-	 * this method must been overridden and is to recognize, to which class the given {@link MotionEvent} belongs.
-	 *
-	 * @param me
-	 * the {@link MotionEvent} to recognize that must be ACTION_MOVE.
-	 *
-	 * @param buf
-	 * the buffer to save information of {@link Interaction}.
+	 * this method need to been overridden and is to recognize, to which class the given {@link MotionEvent} belongs.
 	 *
 	 * @return whether the {@link MotionEvent} is the corresponding interaction.
 	 */
-	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
+	public static boolean recognize()
 	{
 		return false;
 	}
 
 	/**
-	 * this method must been overridden and is to execute the corresponding interaction.
+	 * this method need to been overridden and is to execute the corresponding interaction.
 	 *
-	 * @return true if the interaction is correctly executed. Otherwise, false.
 	 */
-	public static boolean execute()
+	public static void execute()
 	{
-		return false;
 	}
 
 	public abstract Element log_XML();

@@ -23,9 +23,10 @@ import android.view.MotionEvent;
 
 public class Zoom extends Interaction
 {
+	public static final int NUM_POINTERS = 2;
 	private static final double ZOOM_THRESHOLD = 5.0;
 
-	public static final int NUM_POINTERS = 2;
+	public static boolean enabled = true;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
 	private final int zoomLevel_start, zoomLevel_end;
@@ -46,11 +47,17 @@ public class Zoom extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (e.getPointerCount() != NUM_POINTERS)
+		if (!Zoom.enabled)
 		{
 			return false;
 		}
-		else if (buf.className == null)
+
+		if (e.getPointerCount() != Zoom.NUM_POINTERS)
+		{
+			return false;
+		}
+
+		if (buf.className == null)
 		{
 			if (buf.parallel)
 			{

@@ -23,9 +23,10 @@ import android.view.MotionEvent;
 
 public class Rotation extends Interaction
 {
+	public static final int NUM_POINTERS = 2;
 	private static final double ROTATE_THRESHOLD = Math.PI / 36.0; //5 degree
 
-	public static final int NUM_POINTERS = 2;
+	public static boolean enabled = true;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
 	private final float angle_start, angle_end;
@@ -43,7 +44,12 @@ public class Rotation extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (e.getPointerCount() != NUM_POINTERS)
+		if (!Rotation.enabled)
+		{
+			return false;
+		}
+
+		if (e.getPointerCount() != Rotation.NUM_POINTERS)
 		{
 			return false;
 		}

@@ -27,12 +27,13 @@ import android.view.MotionEvent;
 
 public class Move extends Interaction
 {
-	private static final double MOVE_THRESHOLD = 10.0;
-
 	public static final int NUM_POINTERS = 1;
-	private static final int w = Tile.SIZE * 3;
-	private static final int h = Tile.SIZE * 3;
-	private static final float s = (200 / MapView.dpi);
+	private static final double MOVE_THRESHOLD = 10.0;
+	private static final int W = Tile.SIZE * 3;
+	private static final int H = Tile.SIZE * 3;
+	private static final float S = (200 / MapView.dpi);
+
+	public static boolean enabled = true;
 	private final long time_start, time_end;
 	private final ArrayList<PointF> pointer_track;
 	private final PointD center_start, center_end;
@@ -54,11 +55,17 @@ public class Move extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (e.getPointerCount() != NUM_POINTERS)
+		if (!Move.enabled)
 		{
 			return false;
 		}
-		else if (buf.className == null)
+
+		if (e.getPointerCount() != Move.NUM_POINTERS)
+		{
+			return false;
+		}
+
+		if (buf.className == null)
 		{
 			buf.className = Move.class;
 			return true;
@@ -85,12 +92,12 @@ public class Move extends Interaction
 		double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 		if (distance >= MOVE_THRESHOLD)
 		{
-			if (Math.sqrt(buf.velocityX * buf.velocityX + buf.velocityY * buf.velocityY) >= 250.0)
+			if (Math.sqrt(buf.velocityX * buf.velocityX + buf.velocityY * buf.velocityY) >= 200.0)
 			{
 				System.out.println("OnFling");
-				buf.mapView.getMapViewPosition().animateFling(Math.round(buf.velocityX * s),
-				                                              Math.round(buf.velocityY * s),
-				                                              -w, w, -h, h);
+				buf.mapView.getMapViewPosition().animateFling(Math.round(buf.velocityX * S),
+				                                              Math.round(buf.velocityY * S),
+				                                              -W, W, -H, H);
 			}
 			else
 			{

@@ -172,8 +172,6 @@ public class LayerManager extends AbstractList<Layer> {//implements OnGestureLis
 
 	public boolean onTouchEvent(final MotionEvent event) {
 
-		//System.out.println("onTouchEvent in LayerManager");
-
 		if (mDirtyLayers)
 			updateLayers();
 
