@@ -15,6 +15,7 @@
 package org.oscim.interactions;
 
 import org.jdom2.Element;
+import org.oscim.core.MapPosition;
 import org.oscim.view.MapView;
 
 import android.view.MotionEvent;
@@ -25,7 +26,7 @@ public class AutoZoom extends Interaction
 	public static final float AUTO_ZOOM_OUT = 0.99f;
 	public static final float AUTO_ZOOM_IN = 1.01f;
 
-	public static boolean enabled = true;
+	//public static boolean enabled = true;
 	private static AutoZoomThread myThread;
 	private final long time_start, time_end;
 
@@ -42,10 +43,10 @@ public class AutoZoom extends Interaction
 	 */
 	public static int recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (!AutoZoom.enabled)
-		{
-			return 0;
-		}
+//		if (!AutoZoom.enabled)
+//		{
+//			return 0;
+//		}
 
 //		System.out.println("Height: " + buf.mapView.getHeight());
 //		System.out.println("Width: " + buf.mapView.getWidth());
@@ -79,8 +80,8 @@ public class AutoZoom extends Interaction
 		AutoZoom.myThread.start();
 	}
 
-	public static void execute(boolean bool)
-	{
+//	public static void execute(boolean bool)
+//	{
 //		if (bool)
 //		{
 //			if (myThread.)
@@ -91,7 +92,7 @@ public class AutoZoom extends Interaction
 //			if ()
 //			{}
 //		}
-	}
+//	}
 
 	public static void stop()
 	{
@@ -127,69 +128,84 @@ public class AutoZoom extends Interaction
 
 class AutoZoomThread extends Thread
 {
-	private final Object pauseLock;
-	private boolean isPause, isRun;
-	private float scale;
+//	private final Object pauseLock;
+//	private boolean isPause;
+	private boolean isRun;
+	private float scale_forward, scale_backward;
 	private final MapView mapView;
+	private final MapPosition original_pos = new MapPosition();
+	private final MapPosition current_pos = new MapPosition();
 
 	public AutoZoomThread(InteractionBuffer buf, int tag)
 	{
 		if (tag < 0)
 		{
-			this.scale = AutoZoom.AUTO_ZOOM_OUT;
+			this.scale_forward = AutoZoom.AUTO_ZOOM_OUT;
+			this.scale_backward = 1 / this.scale_forward;
 		}
 		else if (tag > 0)
 		{
-			this.scale = AutoZoom.AUTO_ZOOM_IN;
+			this.scale_forward = AutoZoom.AUTO_ZOOM_IN;
+			this.scale_backward = 1 / this.scale_forward;
 		}
 		else
 		{
-			this.scale = 1.0f;
+			this.scale_forward = this.scale_backward = 1.0f;
 		}
 		this.mapView = buf.mapView;
-		this.pauseLock = new Object();
-		this.isPause = false;
+		this.mapView.getMapViewPosition().getMapPosition(this.original_pos);
+//		this.pauseLock = new Object();
+//		this.isPause = false;
 		this.isRun = false;
 	}
 
-	public void onPause()
-	{
-		synchronized (pauseLock)
-		{
-			this.isPause = true;
-		}
-	}
+//	public void onPause()
+//	{
+//		synchronized (pauseLock)
+//		{
+//			this.isPause = true;
+//		}
+//	}
 
-	public void onResume()
-	{
-		synchronized (pauseLock)
-		{
-			this.isPause = false;
-			this.pauseLock.notifyAll();
-		}
-	}
+//	public void onResume()
+//	{
+//		synchronized (pauseLock)
+//		{
+//			this.isPause = false;
+//			this.pauseLock.notifyAll();
+//		}
+//	}
 
 	public void onStop()
 	{
 		this.isRun = false;
-		//System.out.println("set stop");
+		System.out.println("set stop");
 	}
 
 	@Override
 	public void run()
 	{
 		boolean changed;
+		int n;
 
 		this.isRun = true;
-		//System.out.println("AutoZoom has started..." + this.isRun);
+		n = 0;
+		System.out.println("AutoZoom has started..." + this.isRun);
+		this.mapView.getMapViewPosition().getMapPosition(this.current_pos);
+		System.out.println("ZoomLevel_" + n + ": " + this.current_pos.zoomLevel);
+		System.out.println("Scale_" + n + ": " + this.current_pos.scale);
 		do
 		{
-			changed = this.mapView.getMapViewPosition().scaleMap(this.scale, 0, 0);
+			n ++;
+			changed = this.mapView.getMapViewPosition().scaleMap(this.scale_forward, 0, 0);
 			this.mapView.redrawMap(true);
-			//System.out.println("AutoZoom is running..." + this.isRun);
+			this.mapView.getMapViewPosition().getMapPosition(this.current_pos);
+			System.out.println("AutoZoom is running in part 1..." + this.isRun);
+			System.out.println("ZoomLevel_" + n + ": " + this.current_pos.zoomLevel);
+			System.out.println("Scale_" + n + ": " + this.current_pos.scale);
 			try
 			{
-				Thread.sleep(100);
+				Thread.sleep(10);
 			}
 			catch (Exception e)
 			{
@@ -197,7 +213,37 @@ class AutoZoomThread extends Thread
 			}
 		}
 		while (this.isRun && changed);
-		this.isRun = false;
-		//System.out.println("AutoZoom has stoped..." + this.isRun);
+
+		while (this.isRun)
+		{
+			System.out.println("AutoZoom is running in part 2..." + this.isRun);
+		}
+
+		System.out.println("original ZoomLevel: " + this.original_pos.zoomLevel);
+		System.out.println("original Scale: " + this.original_pos.scale);
+
+		n = 0;
+		this.mapView.getMapViewPosition().getMapPosition(this.current_pos);
+		System.out.println("ZoomLevel_" + n + ": " + this.current_pos.zoomLevel);
+		System.out.println("Scale_" + n + ": " + this.current_pos.scale);
+		while ( !this.original_pos.equals(this.current_pos) )
+		{
+			n ++;
+			this.mapView.getMapViewPosition().scaleMap(this.scale_backward, 0, 0);
+			this.mapView.redrawMap(true);
+			this.mapView.getMapViewPosition().getMapPosition(this.current_pos);
+			System.out.println("AutoZoom is running in part 3..." + this.isRun);
+			System.out.println("ZoomLevel_" + n + ": " + this.current_pos.zoomLevel);
+			System.out.println("Scale_" + n + ": " + this.current_pos.scale);
+			try
+			{
+				Thread.sleep(1);
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+		System.out.println("AutoZoom has stoped..." + this.isRun);
 	}
 }

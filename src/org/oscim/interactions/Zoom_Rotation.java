@@ -27,7 +27,7 @@ public class Zoom_Rotation extends Interaction
 	private static final double ZOOM_THRESHOLD = 5.0;
 	private static final double ROTATE_THRESHOLD = Math.PI / 36.0; //5 degree
 
-	public static boolean enabled = true;
+	//public static boolean enabled = true;
 	private final long time_start, time_end;
 	private final ArrayList<PointF>[] pointer_track;
 	private final int zoomLevel_start, zoomLevel_end;
@@ -51,10 +51,10 @@ public class Zoom_Rotation extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (!Zoom_Rotation.enabled)
-		{
-			return false;
-		}
+//		if (!Zoom_Rotation.enabled)
+//		{
+//			return false;
+//		}
 
 		if (e.getPointerCount() != Zoom_Rotation.NUM_POINTERS)
 		{

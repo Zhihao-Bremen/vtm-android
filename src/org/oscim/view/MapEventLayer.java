@@ -78,6 +78,10 @@ public class MapEventLayer extends InputLayer {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent e) {
+		if (!super.isEnabled())
+		{
+			return false;
+		}
 
 		int action = e.getAction() & MotionEvent.ACTION_MASK;
 

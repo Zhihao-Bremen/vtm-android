@@ -33,7 +33,7 @@ public class Move extends Interaction
 	private static final int H = Tile.SIZE * 3;
 	private static final float S = (200 / MapView.dpi);
 
-	public static boolean enabled = true;
+	//public static boolean enabled = true;
 	private final long time_start, time_end;
 	private final ArrayList<PointF> pointer_track;
 	private final PointD center_start, center_end;
@@ -55,10 +55,10 @@ public class Move extends Interaction
 
 	public static boolean recognize(MotionEvent e, InteractionBuffer buf)
 	{
-		if (!Move.enabled)
-		{
-			return false;
-		}
+//		if (!Move.enabled)
+//		{
+//			return false;
+//		}
 
 		if (e.getPointerCount() != Move.NUM_POINTERS)
 		{

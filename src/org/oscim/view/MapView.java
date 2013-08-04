@@ -159,21 +159,16 @@ public class MapView extends RelativeLayout {
 	}
 
 	public MapTileLayer setBaseMap(MapOptions options) {
+		MapEventLayer mapEventLayer = new MapEventLayer(this);
+		mLayerManager.add(0, mapEventLayer);
+
 		MapTileLayer baseLayer = new MapTileLayer(this);
-
 		baseLayer.setMapDatabase(options);
-
-		mLayerManager.add(0, new MapEventLayer(this));
-
 		mLayerManager.add(1, baseLayer);
 
 		MyOverlay temp = new MyOverlay(this);
+		mapEventLayer.setEnabled(false);
 		temp.setEnabled(true);
-//		System.out.println("MyOverlay: " + temp.isEnabled());
-//		System.out.println("AutoZoom: " + AutoZoom.enabled);
-//		System.out.println("Move: " + Move.enabled);
-//		System.out.println("Zoom_Rotation: " + Zoom_Rotation.enabled);
-//		System.out.println("Tilt: " + Tilt.enabled);
 		mLayerManager.add(2, temp);
 
 		mRotationEnabled = true;

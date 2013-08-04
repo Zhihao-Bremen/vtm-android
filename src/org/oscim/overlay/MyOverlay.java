@@ -17,14 +17,12 @@ package org.oscim.overlay;
 import org.oscim.interactions.AutoZoom;
 import org.oscim.interactions.InteractionBuffer;
 import org.oscim.interactions.InteractionManager;
-import org.oscim.interactions.Move;
-import org.oscim.interactions.Tilt;
-import org.oscim.interactions.Zoom_Rotation;
+import org.oscim.layers.InputLayer;
 import org.oscim.view.MapView;
 
 import android.view.MotionEvent;
 
-public class MyOverlay extends Overlay
+public class MyOverlay extends InputLayer
 {
 	private final InteractionManager mInteractionManager;
 	private InteractionBuffer buf = null;
@@ -36,26 +34,26 @@ public class MyOverlay extends Overlay
 		mInteractionManager = mapView.getInteractionManager();
 	}
 
-	@Override
-	public void setEnabled(boolean enabled)
-	{
-		super.setEnabled(enabled);
-
-		if (enabled)
-		{
-			AutoZoom.enabled = true;
-			Move.enabled = false;
-			Zoom_Rotation.enabled = false;
-			Tilt.enabled = false;
-		}
-		else
-		{
-			AutoZoom.enabled = false;
-			Move.enabled = true;
-			Zoom_Rotation.enabled = true;
-			Tilt.enabled = true;
-		}
-	}
+//	@Override
+//	public void setEnabled(boolean enabled)
+//	{
+//		super.setEnabled(enabled);
+//
+//		if (enabled)
+//		{
+//			AutoZoom.enabled = true;
+//			Move.enabled = false;
+//			Zoom_Rotation.enabled = false;
+//			Tilt.enabled = false;
+//		}
+//		else
+//		{
+//			AutoZoom.enabled = false;
+//			Move.enabled = true;
+//			Zoom_Rotation.enabled = true;
+//			Tilt.enabled = true;
+//		}
+//	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent e)
