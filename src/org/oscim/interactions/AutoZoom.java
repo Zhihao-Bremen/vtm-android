@@ -27,6 +27,7 @@ public class AutoZoom extends Interaction
 	public static final float AUTO_ZOOM_IN = 1.01f;
 
 	//public static boolean enabled = true;
+	private static char mode = 'r'; //default mode is right-hand
 	private static AutoZoomThread myThread;
 	private final long time_start, time_end;
 
@@ -61,12 +62,26 @@ public class AutoZoom extends Interaction
 		{
 			if (e.getX(0) <= 100)
 			{
-				return -1;
+				if (mode == 'l')
+				{
+					return 1;
+				}
+				else
+				{
+					return -1;
+				}
 			}
 
 			if (e.getX(0) >= buf.mapView.getWidth() - 100)
 			{
-				return 1;
+				if (mode == 'l')
+				{
+					return -1;
+				}
+				else
+				{
+					return 1;
+				}
 			}
 		}
 
@@ -112,6 +127,23 @@ public class AutoZoom extends Interaction
 		interaction.setAttribute("end", String.valueOf(this.time_end));
 
 		return interaction;
+	}
+
+	public static void setMode(String mode)
+	{
+		if (mode.equals("LEFT"))
+		{
+			AutoZoom.mode = 'l';
+		}
+		else
+		{
+			AutoZoom.mode = 'r';
+		}
+	}
+
+	public static char getMode()
+	{
+		return AutoZoom.mode;
 	}
 
 	public long getTime_start()

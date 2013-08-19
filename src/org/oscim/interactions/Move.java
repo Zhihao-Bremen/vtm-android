@@ -92,7 +92,7 @@ public class Move extends Interaction
 		double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 		if (distance >= MOVE_THRESHOLD)
 		{
-			if (Math.sqrt(buf.velocityX * buf.velocityX + buf.velocityY * buf.velocityY) >= 200.0)
+			if (Math.sqrt(buf.velocityX * buf.velocityX + buf.velocityY * buf.velocityY) >= 500.0)
 			{
 				System.out.println("OnFling");
 				buf.mapView.getMapViewPosition().animateFling(Math.round(buf.velocityX * S),

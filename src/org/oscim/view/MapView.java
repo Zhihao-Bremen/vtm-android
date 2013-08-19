@@ -167,8 +167,6 @@ public class MapView extends RelativeLayout {
 		mLayerManager.add(1, baseLayer);
 
 		MyOverlay temp = new MyOverlay(this);
-		mapEventLayer.setEnabled(false);
-		temp.setEnabled(true);
 		mLayerManager.add(2, temp);
 
 		mRotationEnabled = true;

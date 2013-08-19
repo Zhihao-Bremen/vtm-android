@@ -87,12 +87,12 @@ public class MapPosition {
 
 	public boolean equals(MapPosition target)
 	{
-		if (target.x < this.x - 0.0001f || target.x > this.x + 0.0001f)
+		if (target.x < this.x - 0.01f || target.x > this.x + 0.01f)
 		{
 			return false;
 		}
 
-		if (target.y < this.y - 0.0001f || target.y > this.y + 0.0001f)
+		if (target.y < this.y - 0.01f || target.y > this.y + 0.01f)
 		{
 			return false;
 		}
@@ -102,17 +102,17 @@ public class MapPosition {
 //			return false;
 //		}
 
-		if (target.scale < this.scale - 0.0001f || target.scale > this.scale + 0.0001f)
+		if (target.scale < this.scale - 0.01f || target.scale > this.scale + 0.01f)
 		{
 			return false;
 		}
 
-		if (target.angle < this.angle - 0.0001f || target.angle > this.angle + 0.0001f)
+		if (target.angle < this.angle - 0.01f || target.angle > this.angle + 0.01f)
 		{
 			return false;
 		}
 
-		if (target.tilt < this.tilt - 0.0001f || target.tilt > this.tilt + 0.0001f)
+		if (target.tilt < this.tilt - 0.01f || target.tilt > this.tilt + 0.01f)
 		{
 			return false;
 		}
