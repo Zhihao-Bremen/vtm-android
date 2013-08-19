@@ -15,6 +15,7 @@
 package org.oscim.view;
 
 import org.oscim.core.Tile;
+import org.oscim.interactions.AutoZoom;
 import org.oscim.interactions.InteractionBuffer;
 import org.oscim.interactions.InteractionManager;
 import org.oscim.interactions.Move;
@@ -97,6 +98,13 @@ public class MapEventLayer extends InputLayer {
 
 			buf = new InteractionBuffer(e, mMapView);
 
+			int tag = AutoZoom.recognize(e, buf);
+			if (tag != 0)
+			{
+				AutoZoom.start(buf, tag);
+				buf.className = AutoZoom.class;
+			}
+
 			return true;
 		}
 		else if (action == MotionEvent.ACTION_MOVE)
@@ -108,6 +116,11 @@ public class MapEventLayer extends InputLayer {
 //			}
 //			System.out.println("|");
 //			System.out.println(e.getEventTime());
+
+			if (AutoZoom.class.equals(buf.className))
+			{
+				return true;
+			}
 
 			buf.update(e);
 
@@ -154,6 +167,11 @@ public class MapEventLayer extends InputLayer {
 //			System.out.println("|");
 //			System.out.println(e.getEventTime());
 
+			if (AutoZoom.class.equals(buf.className))
+			{
+				AutoZoom.stop();
+			}
+
 			buf.updateEnd(e);
 			saveInteraction();
 
@@ -168,10 +186,13 @@ public class MapEventLayer extends InputLayer {
 //			}
 //			System.out.println("|");
 
-			buf.updateEnd(e);
-			saveInteraction();
+			if (!AutoZoom.class.equals(buf.className))
+			{
+				buf.updateEnd(e);
+				saveInteraction();
 
-			buf.updateMulti(e, 1);
+				buf.updateMulti(e, 1);
+			}
 
 			return true;
 		}
@@ -188,10 +209,13 @@ public class MapEventLayer extends InputLayer {
 //			}
 //			System.out.println("|");
 
-			buf.updateEnd(e);
-			saveInteraction();
+			if (!AutoZoom.class.equals(buf.className))
+			{
+				buf.updateEnd(e);
+				saveInteraction();
 
-			buf.updateMulti(e, -1);
+				buf.updateMulti(e, -1);
+			}
 
 			return true;
 		}
@@ -246,6 +270,10 @@ public class MapEventLayer extends InputLayer {
 		else if (Tilt.class.equals(buf.className))
 		{
 			mInteractionManager.save(new Tilt(buf));
+		}
+		else if (AutoZoom.class.equals(buf.className))
+		{
+			mInteractionManager.save(new AutoZoom(buf));
 		}
 	}
 

@@ -27,7 +27,8 @@ public class AutoZoom extends Interaction
 	public static final float AUTO_ZOOM_IN = 1.01f;
 
 	//public static boolean enabled = true;
-	private static char mode = 'r'; //default mode is right-hand
+	private static long speed = 10;
+	private static char mode = 'R'; //default mode is right-hand
 	private static AutoZoomThread myThread;
 	private final long time_start, time_end;
 
@@ -58,34 +59,35 @@ public class AutoZoom extends Interaction
 //			return 1;
 //		}
 
+		int tag = 0;
 		if (e.getY(0) >= buf.mapView.getHeight() - 100)
 		{
 			if (e.getX(0) <= 100)
 			{
-				if (mode == 'l')
+				if (mode == 'L')
 				{
-					return 1;
+					tag = 1;
 				}
 				else
 				{
-					return -1;
+					tag = -1;
 				}
 			}
 
 			if (e.getX(0) >= buf.mapView.getWidth() - 100)
 			{
-				if (mode == 'l')
+				if (mode == 'L')
 				{
-					return -1;
+					tag = -1;
 				}
 				else
 				{
-					return 1;
+					tag = 1;
 				}
 			}
 		}
 
-		return 0;
+		return tag;
 	}
 
 	public static void start(InteractionBuffer buf, int tag)
@@ -133,17 +135,27 @@ public class AutoZoom extends Interaction
 	{
 		if (mode.equals("LEFT"))
 		{
-			AutoZoom.mode = 'l';
+			AutoZoom.mode = 'L';
 		}
 		else
 		{
-			AutoZoom.mode = 'r';
+			AutoZoom.mode = 'R';
 		}
 	}
 
 	public static char getMode()
 	{
 		return AutoZoom.mode;
+	}
+
+	public static void setSpeed(long time)
+	{
+		AutoZoom.speed = time;
+	}
+
+	public static long getSpeed()
+	{
+		return AutoZoom.speed;
 	}
 
 	public long getTime_start()
@@ -164,6 +176,7 @@ class AutoZoomThread extends Thread
 //	private boolean isPause;
 	private boolean isRun;
 	private float scale_forward, scale_backward;
+	private final long sleepTime;
 	private final MapView mapView;
 	private final MapPosition original_pos = new MapPosition();
 	private final MapPosition current_pos = new MapPosition();
@@ -184,6 +197,7 @@ class AutoZoomThread extends Thread
 		{
 			this.scale_forward = this.scale_backward = 1.0f;
 		}
+		this.sleepTime = AutoZoom.getSpeed();
 		this.mapView = buf.mapView;
 		this.mapView.getMapViewPosition().getMapPosition(this.original_pos);
 //		this.pauseLock = new Object();
@@ -237,7 +251,7 @@ class AutoZoomThread extends Thread
 			System.out.println("Scale_" + n + ": " + this.current_pos.scale);
 			try
 			{
-				Thread.sleep(10);
+				Thread.sleep(this.sleepTime);
 			}
 			catch (Exception e)
 			{

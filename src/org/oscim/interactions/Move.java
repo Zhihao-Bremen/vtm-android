@@ -94,7 +94,7 @@ public class Move extends Interaction
 		{
 			if (Math.sqrt(buf.velocityX * buf.velocityX + buf.velocityY * buf.velocityY) >= 500.0)
 			{
-				System.out.println("OnFling");
+				//System.out.println("OnFling");
 				buf.mapView.getMapViewPosition().animateFling(Math.round(buf.velocityX * S),
 				                                              Math.round(buf.velocityY * S),
 				                                              -W, W, -H, H);

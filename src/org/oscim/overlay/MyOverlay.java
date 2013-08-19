@@ -84,23 +84,23 @@ public class MyOverlay extends InputLayer
 				AutoZoom.start(buf, tag);
 				buf.className = AutoZoom.class;
 			}
-//			if (tag == -1)
-//			{
-//				System.out.println("auto zoom-out");
-//			}
-//			else if (tag == 1)
-//			{
-//				System.out.println("auto zoom-in");
-//			}
-//			else
-//			{
-//				System.out.println("invalid auto zoom");
-//			}
+			if (tag == -1)
+			{
+				System.out.println("auto zoom-out");
+			}
+			else if (tag == 1)
+			{
+				System.out.println("auto zoom-in");
+			}
+			else
+			{
+				System.out.println("invalid auto zoom");
+			}
 
 			return true;
 		}
-		else if (action == MotionEvent.ACTION_MOVE)
-		{
+//		else if (action == MotionEvent.ACTION_MOVE)
+//		{
 //			System.out.print("my_MOVE: ");
 //			for (int i = 0; i < e.getPointerCount(); i ++)
 //			{
@@ -108,15 +108,15 @@ public class MyOverlay extends InputLayer
 //			}
 //			System.out.println("|");
 //			System.out.println(e.getEventTime());
-
-			tag = AutoZoom.recognize(e, buf);
-			if (tag == 0)
-			{
-				//System.out.println("invalid auto zoom");
-				//AutoZoom.execute(false);
-			}
-			else
-			{
+//
+//			tag = AutoZoom.recognize(e, buf);
+//			if (tag == 0)
+//			{
+//				//System.out.println("invalid auto zoom");
+//				//AutoZoom.execute(false);
+//			}
+//			else
+//			{
 //				if (tag == -1)
 //				{
 //					System.out.println("auto zoom-out");
@@ -125,11 +125,11 @@ public class MyOverlay extends InputLayer
 //				{
 //					System.out.println("auto zoom-in");
 //				}
-				//AutoZoom.execute(true);
-			}
-
-			return true;
-		}
+//				AutoZoom.execute(true);
+//			}
+//
+//			return true;
+//		}
 		else if (action == MotionEvent.ACTION_UP)
 		{
 //			System.out.print("UP: ");
@@ -154,7 +154,9 @@ public class MyOverlay extends InputLayer
 
 			return true;
 		}
-		else if (action == MotionEvent.ACTION_POINTER_DOWN || action == MotionEvent.ACTION_POINTER_UP)
+		else if (action == MotionEvent.ACTION_MOVE ||
+				 action == MotionEvent.ACTION_POINTER_DOWN ||
+				 action == MotionEvent.ACTION_POINTER_UP)
 		{
 			return true;
 		}

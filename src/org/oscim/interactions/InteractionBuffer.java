@@ -146,8 +146,8 @@ public final class InteractionBuffer
 			this.velocityX = (this.curX[0] - this.pointer_track[0].get(0).x) / (e.getEventTime() - e.getDownTime()) * 1000.0f;
 			this.velocityY = (this.curY[0] - this.pointer_track[0].get(0).y) / (e.getEventTime() - e.getDownTime()) * 1000.0f;
 
-			System.out.println("velocityX: " + velocityX);
-			System.out.println("velocityY: " + velocityY);
+			//System.out.println("velocityX: " + velocityX);
+			//System.out.println("velocityY: " + velocityY);
 		}
 		else if (this.num_pointers == 2)
 		{
